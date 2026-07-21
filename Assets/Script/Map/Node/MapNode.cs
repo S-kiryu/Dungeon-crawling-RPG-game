@@ -4,10 +4,10 @@ using System.Collections.Generic;
 /// <summary>
 /// ノードデータ
 /// </summary>
-public class MapNode : MonoBehaviour
+public class MapNode
 {
     public MapEventType EventType;
-    private List<MapNode> _NextNodes = new();
+    public List<MapNode> NextNodes { get; } = new();
 
     /// <summary>
     /// マップのタイプといける次のノードを設定する
@@ -16,6 +16,6 @@ public class MapNode : MonoBehaviour
     /// <param name="nextNodes">次のノード</param>
     public void AddNextNode(MapNode nextNodes)
     {
-        _NextNodes.Add(nextNodes);
+        NextNodes.Add(nextNodes);
     }
 }
