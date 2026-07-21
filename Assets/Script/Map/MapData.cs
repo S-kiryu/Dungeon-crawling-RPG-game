@@ -1,89 +1,41 @@
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
-public class MapData : MonoBehaviour
+public class MapData
 {
-    [SerializeField, Tooltip("ボスまで何歩で行けるのか")] private int _mapLength;
-    [SerializeField, Tooltip("最小の横幅")] private int _mapMinimumWidth;
-    [SerializeField, Tooltip("最大の横幅")] private int _mapMaximumWidth;
-
-    //生成したノードを管理するリスト
-    private List<List<MapNode>> _columns;
-
-    /// <summary>
-    /// マップの生成関数
-    /// </summary>
-    public void GenerateMap(List<List<MapNode>> colums)
-    {
-        colums = new List<List<MapNode>>();
-        for (int i = 0; i < _mapLength; i++)
-        {
-            List<MapNode> column = new();
-
-            int width = Random.Range(_mapMinimumWidth, _mapMaximumWidth + 1);
-
-            // 最初と最後は1マス固定
-            if (i == 0 || i == _mapLength - 1)
-            {
-                width = 1;
-            }
-
-            for (int j = 0; j < width; j++)
-            {
-                MapNode node = new MapNode();
-
-                if (i == 0)
-                    node.EventType = MapEventType.Start;
-                else if (i == _mapLength - 1)
-                    node.EventType = MapEventType.Boss;
-                else
-                    node.EventType = GetRandomEvent();
-
-                column.Add(node);
-            }
-
-            colums.Add(column);
-        }
-        SetNextNode(colums);
-    }
-
     /// <summary>
     /// 次のノードを設定する
     /// </summary>
-    private void SetNextNode(List<List<MapNode>> colums)
+    public void SetNextNode(List<List<MapNode>> columns)
     {
-        for (int i = 0; i < colums.Count-1; i++)
+        for (int columnIndex = 0; columnIndex < columns.Count - 1; columnIndex++)
         {
-            if (colums.Count == i) return;
+            List<MapNode> currentColumn = columns[columnIndex];
+            List<MapNode> nextColumn = columns[columnIndex + 1];
 
-            List<MapNode> column = colums[i];
-            List<MapNode> nextColumn = colums[i + 1];
-
-            for (int j = 0; j < column.Count; j++)
+            // 1. 現在列の全ノードに、最低1本の出口を作る
+            foreach (MapNode currentNode in currentColumn)
             {
-                int random = Random.Range(0, nextColumn.Count);
-                
-                column[j].AddNextNode(nextColumn[random]);
+                MapNode nextNode =
+                    nextColumn[Random.Range(0, nextColumn.Count)];
+
+                currentNode.AddNextNode(nextNode);
+            }
+
+            // 2. 次列の全ノードに、最低1本の入口を保証する
+            foreach (MapNode nextNode in nextColumn)
+            {
+                bool hasIncomingPath = currentColumn.Exists(
+                    currentNode => currentNode.NextNodes.Contains(nextNode));
+
+                if (!hasIncomingPath)
+                {
+                    MapNode currentNode =
+                        currentColumn[Random.Range(0, currentColumn.Count)];
+
+                    currentNode.AddNextNode(nextNode);
+                }
             }
         }
-    }
-
-    /// <summary>
-    /// ランダムにマップのタイプを渡す
-    /// </summary>
-    /// <returns></returns>
-    private MapEventType GetRandomEvent()
-    {
-        int random = Random.Range(0, 100);
-
-        if (random < 50)
-            return MapEventType.Battle;
-
-
-        if (random < 85)
-            return MapEventType.Shop;
-
-        return MapEventType.Break;
     }
 }
