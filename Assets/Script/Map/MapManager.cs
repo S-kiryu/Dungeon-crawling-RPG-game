@@ -5,6 +5,7 @@ using UnityEngine;
 public class MapManager : MonoBehaviour
 {
     [SerializeField] private MapUI _mapUI;
+    [SerializeField] private MapEventManager _mapEventManager;
     [SerializeField, Tooltip("ボスまで何歩で行けるのか")] private int _mapLength;
     [SerializeField, Tooltip("最小の横幅")] private int _mapMinimumWidth;
     [SerializeField, Tooltip("最大の横幅")] private int _mapMaximumWidth;
@@ -39,6 +40,8 @@ public class MapManager : MonoBehaviour
         _mapUI.ShowMap(Columns, this);
     }
 
+
+    //各ステートのイベント
     public void SelectNode(MapNode selectedNode)
     {
         if (!_currentNode.NextNodes.Contains(selectedNode))
@@ -46,32 +49,8 @@ public class MapManager : MonoBehaviour
 
         _currentNode = selectedNode;
 
-        switch (_currentNode.EventType)
-        {
-            case MapEventType.Start:
-                Debug.Log("スタート地点");
-                break;
+        _mapEventManager.Execute(_currentNode);
 
-            case MapEventType.Battle:
-                Debug.Log("バトル開始");
-                break;
-
-            case MapEventType.Boss:
-                Debug.Log("ボス戦");
-                break;
-
-            case MapEventType.Shop:
-                Debug.Log("ショップ");
-                break;
-
-            case MapEventType.Break:
-                Debug.Log("休憩");
-                break;
-
-            default:
-                Debug.LogWarning("未対応のイベント");
-                break;
-        }
     }
     private void DebugMap()
     {
