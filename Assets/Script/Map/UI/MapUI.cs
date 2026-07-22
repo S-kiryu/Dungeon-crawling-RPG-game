@@ -33,7 +33,6 @@ public class MapUI : MonoBehaviour
                 float y = (nodeIndex - (column.Count - 1) / 2f) * _nodeSpacing;
 
                 nodeUI.GetComponent<RectTransform>().anchoredPosition =new Vector2(x, y);
-                nodeUI.Setup(column[nodeIndex], mapManager);
 
                 RectTransform nodeRect = nodeUI.GetComponent<RectTransform>();
 

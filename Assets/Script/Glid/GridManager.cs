@@ -1,5 +1,9 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
+/// <summary>
+/// グリットに指示を送るクラス
+/// </summary>
 public class GridManager : MonoBehaviour
 {
     [SerializeField] private GridCell _gridPrefab;
@@ -9,6 +13,7 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Material _grayMaterial;
 
     private GridCell[,] _grid;
+    public GridCell[,] Grid => _grid;
 
     private float _cellSize;
 
@@ -48,8 +53,28 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    public GridCell GetCell(Vector2Int position)
+    public bool TryGetCell(Vector2Int position, out GridCell cell)
     {
-        return _grid[position.x, position.y];
+        cell = null;
+
+        bool isOutOfRange =
+            position.x < 0 || position.x >= width ||
+            position.y < 0 || position.y >= height;
+
+        if (isOutOfRange)
+            return false;
+
+        cell = _grid[position.x, position.y];
+        return true;
+    }
+
+    public void SetUnit(int x,int y,Unit unit) 
+    {
+            _grid[x, y].TrySetUnit(unit);
+    }
+
+    public void RemoveUnit(int x, int y) 
+    {
+        _grid[x, y].RemoveUnit();
     }
 }

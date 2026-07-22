@@ -1,5 +1,5 @@
 using UnityEngine;
-
+[CreateAssetMenu(menuName = "Battle/Character Status")]
 public class StatusBase : ScriptableObject
 {
     public int HP = 0;
