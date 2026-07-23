@@ -1,6 +1,7 @@
-using UnityEngine;
-
-public class TerrainType : MonoBehaviour
+public enum TerrainType
 {
-
+    Plain,
+    Wall,
+    Forest,
+    Water
 }

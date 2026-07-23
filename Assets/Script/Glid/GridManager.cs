@@ -1,5 +1,5 @@
-using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// グリットに指示を送るクラス
@@ -11,11 +11,13 @@ public class GridManager : MonoBehaviour
     [SerializeField] private int height;
     [SerializeField] private Material _whiteMaterial;
     [SerializeField] private Material _grayMaterial;
+    [SerializeField] private Material _selectedMaterial;
 
     private GridCell[,] _grid;
     public GridCell[,] Grid => _grid;
 
     private float _cellSize;
+    private Unit _selectedUnit;
 
     private void Awake()
     {
@@ -23,8 +25,39 @@ public class GridManager : MonoBehaviour
         GenerateGrid();
     }
 
+    private void Update()
+    {
+        if (Mouse.current == null)
+            return;
+
+        if (!Mouse.current.leftButton.wasPressedThisFrame)
+            return;
+
+        //今押したところにレイキャストを飛ばしてグリットを取る
+        Vector2 mousePosition = Mouse.current.position.ReadValue();
+        Ray ray = Camera.main.ScreenPointToRay(mousePosition);
+
+        if (!Physics.Raycast(ray, out RaycastHit hit))
+        {
+            Debug.Log("Raycast missed");
+            return;
+        }
+
+        Debug.Log($"Raycast hit: {hit.collider.gameObject.name}, layer={LayerMask.LayerToName(hit.collider.gameObject.layer)}");
+
+        GridCell cell = hit.collider.GetComponent<GridCell>();
+
+        if (cell == null)
+        {
+            Debug.Log("Hit object has no GridCell");
+            return;
+        }
+
+        OnCellClicked(cell);
+    }
+
     /// <summary>
-    /// グリット生成の
+    /// グリット生成
     /// </summary>
     private void GenerateGrid()
     {
@@ -53,6 +86,44 @@ public class GridManager : MonoBehaviour
         }
     }
 
+
+    /// <summary>
+    /// 指定したユニットをグリットに移動させる関数
+    /// </summary>
+    /// <param name="unit"></param>
+    /// <param name="destination"></param>
+    /// <returns></returns>
+    public bool TryMoveUnit(Unit unit, Vector2Int destination)
+    {
+        if (unit == null)
+            return false;
+
+        if (!TryGetCell(destination, out GridCell targetCell))
+            return false;
+
+        if (targetCell.IsOccupied)
+            return false;
+
+        GridCell currentCell = unit.CurrentCell;
+        int distance = Mathf.Abs(currentCell.Position.x - destination.x)
+                     + Mathf.Abs(currentCell.Position.y - destination.y);
+
+        // 1マスだけ移動可能
+        if (distance != 1)
+            return false;
+
+        currentCell.RemoveUnit();
+
+        if (!targetCell.TrySetUnit(unit))
+        {
+            currentCell.TrySetUnit(unit);
+            return false;
+        }
+
+        unit.MoveTo(targetCell);
+        return true;
+    }
+
     public bool TryGetCell(Vector2Int position, out GridCell cell)
     {
         cell = null;
@@ -68,13 +139,44 @@ public class GridManager : MonoBehaviour
         return true;
     }
 
-    public void SetUnit(int x,int y,Unit unit) 
+    private void OnCellClicked(GridCell clickedCell)
     {
-            _grid[x, y].TrySetUnit(unit);
+        if (clickedCell.IsOccupied)
+        {
+            SelectUnit(clickedCell.CurrentUnit);
+            return;
+        }
+
+        if (_selectedUnit == null)
+            return;
+
+        GridCell previousCell = _selectedUnit.CurrentCell;
+        if (TryMoveUnit(_selectedUnit, clickedCell.Position))
+        {
+            SetDefaultMaterial(previousCell);
+            _selectedUnit = null;
+        }
     }
 
-    public void RemoveUnit(int x, int y) 
+    private void SelectUnit(Unit unit)
     {
-        _grid[x, y].RemoveUnit();
+        ClearSelection();
+        _selectedUnit = unit;
+        _selectedUnit.CurrentCell.SetMaterial(_selectedMaterial);
+    }
+
+    private void ClearSelection()
+    {
+        if (_selectedUnit == null)
+            return;
+
+        SetDefaultMaterial(_selectedUnit.CurrentCell);
+        _selectedUnit = null;
+    }
+
+    private void SetDefaultMaterial(GridCell cell)
+    {
+        bool isWhite = (cell.Position.x + cell.Position.y) % 2 == 0;
+        cell.SetMaterial(isWhite ? _whiteMaterial : _grayMaterial);
     }
 }

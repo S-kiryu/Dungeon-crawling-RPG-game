@@ -19,4 +19,10 @@ public class Unit : MonoBehaviour
 
         return true;
     }
+
+    public void MoveTo(GridCell destination)
+    {
+        CurrentCell = destination;
+        transform.position = destination.transform.position;
+    }
 }
