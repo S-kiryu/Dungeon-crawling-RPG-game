@@ -13,6 +13,8 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Material _whiteMaterial;
     [SerializeField] private Material _grayMaterial;
     [SerializeField] private Material _selectedMaterial;
+    [SerializeField] private Material _attackRangeMaterial;
+    [SerializeField] private Material _attackTargetMaterial;
 
     private GridCell[,] _grid;
     public GridCell[,] Grid => _grid;
@@ -179,34 +181,83 @@ public class GridManager : MonoBehaviour
 
                     //攻撃か待機ができるステート
                     _battleManager.ChangeState(BattleState.SelectAfterMoveCommand);
+                    ShowAttackRange(_selectedUnit);
                 }
                 break;
 
                 //ボタンで呼ばれてる
                 //敵を選択した時のステート
             case BattleState.SelectAttackTarget:
+                if (_selectedUnit == null ||
+                    _selectedUnit.RangeData == null ||
+                    _selectedUnit.RangeData.Offsets == null ||
+                    !clickedCell.IsOccupied)
+                    return;
+
+                Vector2Int targetOffset = clickedCell.Position - _selectedUnit.CurrentCell.Position;
+                bool isInActionRange = false;
+
+                foreach (Vector2Int offset in _selectedUnit.RangeData.Offsets)
+                {
+                    if (offset == targetOffset)
+                    {
+                        isInActionRange = true;
+                        break;
+                    }
+                }
+
+                if (!isInActionRange)
+                    return;
                 Debug.Log("攻撃対象選択");
                 if (clickedCell.CurrentUnit.Team == TeamType.Enemy)
                 {
                     Debug.Log("敵を選択した");
                     Debug.Log($"敵が攻撃食らう前{clickedCell.CurrentUnit.Status.CurrentHP}HP");
                     //攻撃ステートに移行
-                    _battleManager.ChangeState(BattleState.Attacking);
+                    ClearAttackRange();
+                    Debug.Log("攻撃！！！");
+                    clickedCell.CurrentUnit.TakeDamage(_selectedUnit.Status.Attack);
+                    //Debug.Log($"攻撃力{_selectedUnit.Status.Attack}\n食らったあと{clickedCell.CurrentUnit.Status.CurrentHP}HP");
+                    _battleManager.ChangeState(BattleState.EnemyTurn);
                     return;
                 }
                 break;
-
-            //攻撃ステート
-            case BattleState.Attacking:
-                Debug.Log("攻撃！！！");
-                clickedCell.CurrentUnit.Status.TakeDamage(_selectedUnit.Status.Attack);
-                Debug.Log($"攻撃力{_selectedUnit.Status.Attack}\n食らったあと{clickedCell.CurrentUnit.Status.CurrentHP}HP");
-                _battleManager.ChangeState(BattleState.EnemyTurn);
-                break;
-
             //AIステート
             case BattleState.EnemyTurn:
                 break;
+        }
+    }
+
+    public void ShowAttackRange(Unit unit)
+    {
+        if (unit == null || unit.RangeData == null)
+            return;
+
+        foreach (Vector2Int offset in unit.RangeData.Offsets)
+        {
+            Vector2Int position = unit.CurrentCell.Position + offset;
+
+            if (!TryGetCell(position, out GridCell cell))
+                continue;
+
+            cell.SetMaterial(_attackRangeMaterial);
+
+            // 敵だけを強調したい場合
+            if (cell.IsOccupied && cell.CurrentUnit.Team == TeamType.Enemy)
+            {
+                cell.SetMaterial(_attackTargetMaterial);
+            }
+        }
+    }
+
+    private void ClearAttackRange()
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                SetDefaultMaterial(_grid[x, y]);
+            }
         }
     }
 

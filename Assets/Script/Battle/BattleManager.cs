@@ -42,7 +42,7 @@ public class BattleManager : MonoBehaviour
     /// </summary>
     public void OnWaitButton()
     {
-        if (CurrentState != BattleState.SelectAfterMoveCommand && CurrentState != BattleState.SelectMoveTarget)
+        if (CurrentState != BattleState.SelectAfterMoveCommand && CurrentState != BattleState.SelectMoveTarget && CurrentState != BattleState.SelectAttackTarget)
             return;
         Debug.Log("敵のターンに移行");
         ChangeState(BattleState.EnemyTurn);

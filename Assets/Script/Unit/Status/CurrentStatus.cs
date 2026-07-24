@@ -21,18 +21,4 @@ public class CurrentStatus
         MoveLength = status.MoveLength;
         Weight = status.Weight;
     }
-
-    public void TakeDamage(int damage)
-    {
-        damage -= Defense;
-
-        if (damage < 0 ) damage = 0;
-
-        CurrentHP -= damage;
-
-        if (CurrentHP <= 0)
-        {
-            CurrentHP = 0;
-        }
-    }
 }

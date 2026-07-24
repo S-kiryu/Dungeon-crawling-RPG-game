@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TestStatus
   m_EditorClassIdentifier: Assembly-CSharp::StatusBase
   HP: 100
-  Attack: 1
+  Attack: 100
   Deffens: 0
   Speed: 10
   MoveLength: 3

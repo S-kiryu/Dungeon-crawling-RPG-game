@@ -36,6 +36,28 @@ public class Unit : MonoBehaviour
         StartCoroutine(MoveRoutine(destination.transform.position, onComplete));
     }
 
+    public void TakeDamage(int damage)
+    {
+        damage -= Status.Defense;
+
+        if (damage < 0) damage = 0;
+
+        Status.CurrentHP -= damage;
+
+        if (Status.CurrentHP <= 0)
+        {
+            Status.CurrentHP = 0;
+            Dead();
+        }
+    }
+
+    private void Dead() 
+    {
+        CurrentCell.RemoveUnit();
+        CurrentCell = null;
+        gameObject.SetActive(false);
+    }
+
     private IEnumerator MoveRoutine(Vector3 destinationPosition, System.Action onComplete)
     {
         _isMoving = true;

@@ -400,8 +400,10 @@ MonoBehaviour:
   width: 6
   height: 5
   _whiteMaterial: {fileID: 2100000, guid: 9534c8749ce22fd4f868e7fb77b072ec, type: 2}
-  _grayMaterial: {fileID: 2100000, guid: 6c92d51d0a8ae664d99812e14fac3118, type: 2}
-  _selectedMaterial: {fileID: 2100000, guid: 19867e7c97b1f2d4a962d36d6606d818, type: 2}
+  _grayMaterial: {fileID: 2100000, guid: 3173eed5026a8114495008def5b6d1c1, type: 2}
+  _selectedMaterial: {fileID: 2100000, guid: 6c92d51d0a8ae664d99812e14fac3118, type: 2}
+  _attackRangeMaterial: {fileID: 2100000, guid: 62342cd3a3bef71439c9fe3e9e4199a0, type: 2}
+  _attackTargetMaterial: {fileID: 2100000, guid: 19867e7c97b1f2d4a962d36d6606d818, type: 2}
 --- !u!4 &825214051
 Transform:
   m_ObjectHideFlags: 0
