@@ -9,12 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ccb33b1081e5b54483771200403773b, type: 3}
-  m_Name: TestStatus
-  m_EditorClassIdentifier: Assembly-CSharp::StatusBase
-  HP: 100
-  Attack: 1
-  Deffens: 0
-  Speed: 10
-  MoveLength: 3
-  Weight: 0
+  m_Script: {fileID: 11500000, guid: 74b476e122729114ab68d42be80ccd88, type: 3}
+  m_Name: DemoRangeData
+  m_EditorClassIdentifier: Assembly-CSharp::ActionRangeData
+  origin: 1
+  offsets:
+  - {x: 1, y: 0}
+  - {x: -1, y: 0}
+  - {x: 0, y: 1}
+  - {x: 0, y: -1}

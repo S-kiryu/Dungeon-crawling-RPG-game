@@ -14,14 +14,21 @@ public class BattleManager : MonoBehaviour
     {
         ChangeState(BattleState.SelectMoveTarget);
     }
+
+    /// <summary>
+    /// 味方を選んだ後に使うボタン
+    /// </summary>
     public void OnMoveButton()
     {
-        if (CurrentState != BattleState.SelectBeforeMoveCommand)
+        if (CurrentState != BattleState.SelectUnit)
             return;
 
         ChangeState(BattleState.SelectMoveTarget);
     }
 
+    /// <summary>
+    /// 攻撃したらターン終了
+    /// </summary>
     public void OnAttackButton()
     {
         if (CurrentState != BattleState.SelectAfterMoveCommand)
@@ -30,11 +37,14 @@ public class BattleManager : MonoBehaviour
         ChangeState(BattleState.SelectAttackTarget);
     }
 
+    /// <summary>
+    /// ターンを終了させたいとき
+    /// </summary>
     public void OnWaitButton()
     {
-        if (CurrentState != BattleState.SelectAfterMoveCommand)
+        if (CurrentState != BattleState.SelectAfterMoveCommand && CurrentState != BattleState.SelectMoveTarget)
             return;
-
+        Debug.Log("敵のターンに移行");
         ChangeState(BattleState.EnemyTurn);
     }
 

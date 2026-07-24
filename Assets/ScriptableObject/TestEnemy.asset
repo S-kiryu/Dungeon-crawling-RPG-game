@@ -10,9 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: efc00c09f2995f94baa21844ff12a006, type: 3}
-  m_Name: TestCharacterData
+  m_Name: TestEnemy
   m_EditorClassIdentifier: Assembly-CSharp::CharacterData
   CharacterName: kabo
+  TeamType: 1
   Prefab: {fileID: 1131354936596512038, guid: 63863069f7685ba409fa037edd934098, type: 3}
   Icon: {fileID: 0}
   Status: {fileID: 11400000, guid: d82f6a73629f02d4c9d61b3e40598b9a, type: 2}

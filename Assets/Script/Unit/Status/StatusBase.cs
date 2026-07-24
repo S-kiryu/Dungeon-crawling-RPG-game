@@ -6,6 +6,6 @@ public class StatusBase : ScriptableObject
     public int Attack = 0;
     public int Deffens = 0;
     public int Speed = 0;
-    public int MoveSpeed = 0;
+    public int MoveLength = 0;
     public int Weight = 0;
 }

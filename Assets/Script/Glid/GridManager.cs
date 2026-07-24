@@ -109,7 +109,7 @@ public class GridManager : MonoBehaviour
         int distance = Mathf.Abs(currentCell.Position.x - destination.x)
                      + Mathf.Abs(currentCell.Position.y - destination.y);
 
-        if (distance > unit.Status.MoveSpeed)
+        if (distance > unit.Status.MoveLength)
             return false;
 
         currentCell.RemoveUnit();
@@ -153,16 +153,20 @@ public class GridManager : MonoBehaviour
     {
         switch (_battleManager.CurrentState)
         {
+            //キャラ選択用のステート
             case BattleState.SelectUnit:
                 if (!clickedCell.IsOccupied)
                     return;
-                if (clickedCell.CurrentUnit.Team != TeamType.Player)
+                if (clickedCell.CurrentUnit.Team != TeamType.Player) 
+                {
+                    Debug.Log("playerじゃないよ");
                     return;
-
+                }
+                //移動選択のステートへ
                 SelectUnit(clickedCell.CurrentUnit);
-                _battleManager.ChangeState(BattleState.SelectBeforeMoveCommand);
                 break;
 
+            //キャラを移動させるステート
             case BattleState.SelectMoveTarget:
                 if (_selectedUnit == null)
                     return;
@@ -172,12 +176,36 @@ public class GridManager : MonoBehaviour
                 if (TryMoveUnit(_selectedUnit, clickedCell.Position))
                 {
                     SetDefaultMaterial(previousCell);
+
+                    //攻撃か待機ができるステート
                     _battleManager.ChangeState(BattleState.SelectAfterMoveCommand);
                 }
                 break;
 
+                //ボタンで呼ばれてる
+                //敵を選択した時のステート
             case BattleState.SelectAttackTarget:
                 Debug.Log("攻撃対象選択");
+                if (clickedCell.CurrentUnit.Team == TeamType.Enemy)
+                {
+                    Debug.Log("敵を選択した");
+                    Debug.Log($"敵が攻撃食らう前{clickedCell.CurrentUnit.Status.CurrentHP}HP");
+                    //攻撃ステートに移行
+                    _battleManager.ChangeState(BattleState.Attacking);
+                    return;
+                }
+                break;
+
+            //攻撃ステート
+            case BattleState.Attacking:
+                Debug.Log("攻撃！！！");
+                clickedCell.CurrentUnit.Status.TakeDamage(_selectedUnit.Status.Attack);
+                Debug.Log($"攻撃力{_selectedUnit.Status.Attack}\n食らったあと{clickedCell.CurrentUnit.Status.CurrentHP}HP");
+                _battleManager.ChangeState(BattleState.EnemyTurn);
+                break;
+
+            //AIステート
+            case BattleState.EnemyTurn:
                 break;
         }
     }

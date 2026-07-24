@@ -1,7 +1,6 @@
 public enum BattleState
 {
     SelectUnit,
-    SelectBeforeMoveCommand,
     SelectMoveTarget,
     Moving,
     SelectAfterMoveCommand,

@@ -13,4 +13,7 @@ public class CharacterData : ScriptableObject
 
     [Header("ステータス")]
     public StatusBase Status;
+
+    [Header("攻撃の長さ")]
+    public ActionRangeData RangeData;
 }
