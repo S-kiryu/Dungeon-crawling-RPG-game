@@ -1,8 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// 戦闘時に各ステートを管理する
-/// </summary>
 public class BattleManager : MonoBehaviour
 {
     public BattleState CurrentState { get; private set; } = BattleState.SelectUnit;
@@ -13,33 +10,32 @@ public class BattleManager : MonoBehaviour
         Debug.Log($"BattleState changed: {CurrentState}");
     }
 
-    /// <summary>
-    /// 移動
-    /// </summary>
-    public void SelectMoveCommand()
+    public void StartMoveSelect()
     {
         ChangeState(BattleState.SelectMoveTarget);
     }
-
-    /// <summary>
-    /// 攻撃
-    /// </summary>
-    public void SelectAttackCommand()
+    public void OnMoveButton()
     {
+        if (CurrentState != BattleState.SelectBeforeMoveCommand)
+            return;
+
+        ChangeState(BattleState.SelectMoveTarget);
+    }
+
+    public void OnAttackButton()
+    {
+        if (CurrentState != BattleState.SelectAfterMoveCommand)
+            return;
+
         ChangeState(BattleState.SelectAttackTarget);
     }
 
-    /// <summary>
-    /// 待つ
-    /// </summary>
-    public void SelectWaitCommand()
+    public void OnWaitButton()
     {
-        Debug.Log("Wait selected");
+        if (CurrentState != BattleState.SelectAfterMoveCommand)
+            return;
+
         ChangeState(BattleState.EnemyTurn);
     }
 
-    public void BackToCommand()
-    {
-        ChangeState(BattleState.SelectCommand);
-    }
 }

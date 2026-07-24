@@ -7,6 +7,7 @@ public class Unit : MonoBehaviour
     public TeamType Team { get; private set; }
     private bool _isMoving = false;
     public bool IsMoving => _isMoving;
+    public bool IsDaed => Status.CurrentHP >= 0;
 
     public bool Initialize(CharacterData characterData, GridCell gridCell, TeamType team)
     {
@@ -51,5 +52,14 @@ public class Unit : MonoBehaviour
         _isMoving = false;
 
         onComplete?.Invoke();
+    }
+
+    private void TakeDamage(int damage) 
+    {
+        Status.CurrentHP -= damage;
+        if (Status.CurrentHP >= 0) 
+        {
+            Status.CurrentHP = 0;
+        }
     }
 }

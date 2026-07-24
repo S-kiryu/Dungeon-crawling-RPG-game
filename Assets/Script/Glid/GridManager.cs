@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class GridManager : MonoBehaviour
 {
+    [SerializeField] private BattleManager _battleManager;
     [SerializeField] private GridCell _gridPrefab;
     [SerializeField] private int width;
     [SerializeField] private int height;
@@ -119,7 +120,13 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-        unit.MoveTo(targetCell);
+        _battleManager.ChangeState(BattleState.Moving);
+
+        unit.MoveTo(targetCell, () =>
+        {
+            _battleManager.ChangeState(BattleState.SelectAfterMoveCommand);
+        });
+
         return true;
     }
 
@@ -138,22 +145,40 @@ public class GridManager : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// 各ステートのクリック判定
+    /// </summary>
+    /// <param name="clickedCell"></param>
     private void OnCellClicked(GridCell clickedCell)
     {
-        if (clickedCell.IsOccupied)
+        switch (_battleManager.CurrentState)
         {
-            SelectUnit(clickedCell.CurrentUnit);
-            return;
-        }
+            case BattleState.SelectUnit:
+                if (!clickedCell.IsOccupied)
+                    return;
+                if (clickedCell.CurrentUnit.Team != TeamType.Player)
+                    return;
 
-        if (_selectedUnit == null)
-            return;
+                SelectUnit(clickedCell.CurrentUnit);
+                _battleManager.ChangeState(BattleState.SelectBeforeMoveCommand);
+                break;
 
-        GridCell previousCell = _selectedUnit.CurrentCell;
-        if (TryMoveUnit(_selectedUnit, clickedCell.Position))
-        {
-            SetDefaultMaterial(previousCell);
-            _selectedUnit = null;
+            case BattleState.SelectMoveTarget:
+                if (_selectedUnit == null)
+                    return;
+
+                GridCell previousCell = _selectedUnit.CurrentCell;
+
+                if (TryMoveUnit(_selectedUnit, clickedCell.Position))
+                {
+                    SetDefaultMaterial(previousCell);
+                    _battleManager.ChangeState(BattleState.SelectAfterMoveCommand);
+                }
+                break;
+
+            case BattleState.SelectAttackTarget:
+                Debug.Log("攻撃対象選択");
+                break;
         }
     }
 
