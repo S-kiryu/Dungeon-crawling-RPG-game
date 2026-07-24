@@ -7,7 +7,7 @@ public class CurrentStatus
     public int Attack;
     public int Defense;
     public int Speed;
-    public int MoveSpeed;
+    public int MoveLength;
     public int Weight;
 
     public CurrentStatus(StatusBase status)
@@ -18,7 +18,21 @@ public class CurrentStatus
         Attack = status.Attack;
         Defense = status.Deffens;
         Speed = status.Speed;
-        MoveSpeed = status.MoveSpeed;
+        MoveLength = status.MoveLength;
         Weight = status.Weight;
+    }
+
+    public void TakeDamage(int damage)
+    {
+        damage -= Defense;
+
+        if (damage < 0 ) damage = 0;
+
+        CurrentHP -= damage;
+
+        if (CurrentHP <= 0)
+        {
+            CurrentHP = 0;
+        }
     }
 }
