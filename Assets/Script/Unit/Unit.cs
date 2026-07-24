@@ -5,11 +5,12 @@ public class Unit : MonoBehaviour
     public CurrentStatus Status { get; private set; }
     public GridCell CurrentCell { get; private set; }
     public TeamType Team { get; private set; }
+    public ActionRangeData RangeData { get; private set; }
     private bool _isMoving = false;
     public bool IsMoving => _isMoving;
-    public bool IsDaed => Status.CurrentHP >= 0;
+    public bool IsDead => Status.CurrentHP <= 0;
 
-    public bool Initialize(CharacterData characterData, GridCell gridCell, TeamType team)
+    public bool Initialize(CharacterData characterData, GridCell gridCell, TeamType team, ActionRangeData actionRange)
     {
         if (characterData == null || characterData.Status == null)
             return false;
@@ -21,6 +22,7 @@ public class Unit : MonoBehaviour
         CurrentCell = gridCell;
         transform.position = gridCell.transform.position;
         Team = team;
+        RangeData = actionRange;
 
         return true;
     }
@@ -52,14 +54,5 @@ public class Unit : MonoBehaviour
         _isMoving = false;
 
         onComplete?.Invoke();
-    }
-
-    private void TakeDamage(int damage) 
-    {
-        Status.CurrentHP -= damage;
-        if (Status.CurrentHP >= 0) 
-        {
-            Status.CurrentHP = 0;
-        }
     }
 }

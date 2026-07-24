@@ -30,7 +30,7 @@ public class UnitGenerator : MonoBehaviour
             cell.transform.position,
             Quaternion.identity);
 
-        if (!unit.Initialize(data, cell,data.TeamType))
+        if (!unit.Initialize(data, cell,data.TeamType,data.RangeData))
         {
             Destroy(unit.gameObject);
             return null;
