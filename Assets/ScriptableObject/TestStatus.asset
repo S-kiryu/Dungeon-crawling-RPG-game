@@ -15,6 +15,6 @@ MonoBehaviour:
   HP: 100
   Attack: 1
   Deffens: 0
-  Speed: 1
-  MoveSpeed: 1
+  Speed: 10
+  MoveSpeed: 3
   Weight: 0

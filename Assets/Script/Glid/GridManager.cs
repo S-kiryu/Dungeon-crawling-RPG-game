@@ -108,8 +108,7 @@ public class GridManager : MonoBehaviour
         int distance = Mathf.Abs(currentCell.Position.x - destination.x)
                      + Mathf.Abs(currentCell.Position.y - destination.y);
 
-        // 1マスだけ移動可能
-        if (distance != 1)
+        if (distance > unit.Status.MoveSpeed)
             return false;
 
         currentCell.RemoveUnit();
