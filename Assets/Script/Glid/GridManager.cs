@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -21,6 +22,14 @@ public class GridManager : MonoBehaviour
 
     private float _cellSize;
     private Unit _selectedUnit;
+
+    private static readonly Vector2Int[] Directions =
+{
+    Vector2Int.up,
+    Vector2Int.down,
+    Vector2Int.left,
+    Vector2Int.right
+};
 
     private void Awake()
     {
@@ -90,28 +99,42 @@ public class GridManager : MonoBehaviour
     }
 
 
+
     /// <summary>
     /// 指定したユニットをグリットに移動させる関数
     /// </summary>
     /// <param name="unit"></param>
     /// <param name="destination"></param>
     /// <returns></returns>
-    public bool TryMoveUnit(Unit unit, Vector2Int destination)
+    public bool TryMoveUnit(
+        Unit unit,
+        Vector2Int destination,
+        System.Action onComplete = null)
     {
         if (unit == null)
             return false;
-
+        //移動先のグリットが存在するか、または移動先が占有されていないかを確認
         if (!TryGetCell(destination, out GridCell targetCell))
             return false;
-
         if (targetCell.IsOccupied)
             return false;
 
         GridCell currentCell = unit.CurrentCell;
-        int distance = Mathf.Abs(currentCell.Position.x - destination.x)
-                     + Mathf.Abs(currentCell.Position.y - destination.y);
 
-        if (distance > unit.Status.MoveLength)
+        // BFSで実際に通れる経路を探す
+        if (!TryFindPath(
+                currentCell,
+                targetCell,
+                unit,
+                out List<GridCell> path))
+        {
+            return false;
+        }
+
+        // pathには現在地も含まれるため、移動距離は-1
+        int moveDistance = path.Count - 1;
+
+        if (moveDistance > unit.Status.MoveLength)
             return false;
 
         currentCell.RemoveUnit();
@@ -122,14 +145,107 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-        _battleManager.ChangeState(BattleState.Moving);
-
-        unit.MoveTo(targetCell, () =>
-        {
-            _battleManager.ChangeState(BattleState.SelectAfterMoveCommand);
-        });
+        unit.MoveAlongPath(path, onComplete);
 
         return true;
+    }
+
+    /// <summary>
+    /// BFSで経路探索を行う関数
+    /// </summary>
+    /// <param name="startCell"></param>
+    /// <param name="destinationCell"></param>
+    /// <param name="movingUnit"></param>
+    /// <param name="path"></param>
+    /// <returns></returns>
+    public bool TryFindPath(
+    GridCell startCell,
+    GridCell destinationCell,
+    Unit movingUnit,
+    out List<GridCell> path)
+    {
+        path = null;
+
+        if (startCell == null || destinationCell == null)
+            return false;
+
+        Queue<GridCell> searchQueue = new();
+
+        // Key：調査したセル
+        // Value：そのセルへ来る直前にいたセル
+        Dictionary<GridCell, GridCell> previousCells = new();
+
+        searchQueue.Enqueue(startCell);
+        previousCells[startCell] = null;
+
+        while (searchQueue.Count > 0)
+        {
+            GridCell currentCell = searchQueue.Dequeue();
+
+            if (currentCell == destinationCell)
+            {
+                path = BuildPath(
+                    previousCells,
+                    destinationCell
+                );
+
+                return true;
+            }
+
+            foreach (Vector2Int direction in Directions)
+            {
+                Vector2Int nextPosition =
+                    currentCell.Position + direction;
+
+                if (!TryGetCell(
+                        nextPosition,
+                        out GridCell nextCell))
+                {
+                    continue;
+                }
+
+                // すでに調査したセル
+                if (previousCells.ContainsKey(nextCell))
+                    continue;
+
+                // 壁は通れない
+                if (nextCell.Terrain == TerrainType.Wall)
+                    continue;
+
+                // 他のユニットがいるセルは通れない
+                if (nextCell.IsOccupied &&
+                    nextCell.CurrentUnit != movingUnit)
+                {
+                    continue;
+                }
+
+                previousCells[nextCell] = currentCell;
+                searchQueue.Enqueue(nextCell);
+            }
+        }
+
+        // 目的地までの経路がなかった
+        return false;
+    }
+
+    private List<GridCell> BuildPath(
+    Dictionary<GridCell, GridCell> previousCells,
+    GridCell destinationCell)
+    {
+        List<GridCell> path = new();
+
+        GridCell currentCell = destinationCell;
+
+        while (currentCell != null)
+        {
+            path.Add(currentCell);
+            currentCell = previousCells[currentCell];
+        }
+
+        // 目的地→現在地になっているので反転する
+        path.Reverse();
+
+        return path;
     }
 
     public bool TryGetCell(Vector2Int position, out GridCell cell)
@@ -159,13 +275,14 @@ public class GridManager : MonoBehaviour
             case BattleState.SelectUnit:
                 if (!clickedCell.IsOccupied)
                     return;
-                if (clickedCell.CurrentUnit.Team != TeamType.Player) 
+                if (clickedCell.CurrentUnit.Team != TeamType.Player)
                 {
                     Debug.Log("playerじゃないよ");
                     return;
                 }
                 //移動選択のステートへ
                 SelectUnit(clickedCell.CurrentUnit);
+                _battleManager.ChangeState(BattleState.SetMove);
                 break;
 
             //キャラを移動させるステート
@@ -174,19 +291,35 @@ public class GridManager : MonoBehaviour
                     return;
 
                 GridCell previousCell = _selectedUnit.CurrentCell;
+                Unit movingUnit = _selectedUnit;
 
-                if (TryMoveUnit(_selectedUnit, clickedCell.Position))
+                bool startedMoving = TryMoveUnit(
+                    movingUnit,
+                    clickedCell.Position,
+                    () =>
+                    {
+                        // 移動完了後に攻撃・待機を選択可能にする
+                        _battleManager.ChangeState(
+                            BattleState.SelectAfterMoveCommand
+                        );
+
+                        ShowAttackRange(movingUnit);
+                    }
+                );
+
+                if (startedMoving)
                 {
                     SetDefaultMaterial(previousCell);
 
-                    //攻撃か待機ができるステート
-                    _battleManager.ChangeState(BattleState.SelectAfterMoveCommand);
-                    ShowAttackRange(_selectedUnit);
+                    _battleManager.ChangeState(
+                        BattleState.Moving
+                    );
                 }
+
                 break;
 
-                //ボタンで呼ばれてる
-                //敵を選択した時のステート
+            //ボタンで呼ばれてる
+            //敵を選択した時のステート
             case BattleState.SelectAttackTarget:
                 if (_selectedUnit == null ||
                     _selectedUnit.RangeData == null ||
@@ -194,6 +327,7 @@ public class GridManager : MonoBehaviour
                     !clickedCell.IsOccupied)
                     return;
 
+                //攻撃範囲内かどうかの判定
                 Vector2Int targetOffset = clickedCell.Position - _selectedUnit.CurrentCell.Position;
                 bool isInActionRange = false;
 
@@ -208,26 +342,38 @@ public class GridManager : MonoBehaviour
 
                 if (!isInActionRange)
                     return;
-                Debug.Log("攻撃対象選択");
-                if (clickedCell.CurrentUnit.Team == TeamType.Enemy)
-                {
-                    Debug.Log("敵を選択した");
-                    Debug.Log($"敵が攻撃食らう前{clickedCell.CurrentUnit.Status.CurrentHP}HP");
-                    //攻撃ステートに移行
-                    ClearAttackRange();
-                    Debug.Log("攻撃！！！");
-                    clickedCell.CurrentUnit.TakeDamage(_selectedUnit.Status.Attack);
-                    //Debug.Log($"攻撃力{_selectedUnit.Status.Attack}\n食らったあと{clickedCell.CurrentUnit.Status.CurrentHP}HP");
-                    _battleManager.ChangeState(BattleState.EnemyTurn);
+                Unit targetUnit = clickedCell.CurrentUnit;
+
+                if (targetUnit.Team != TeamType.Enemy)
                     return;
-                }
+
+                _battleManager.ChangeState(BattleState.Attacking);
+
+                // 攻撃処理
+                targetUnit.TakeDamage(
+                    _selectedUnit.Status.Attack
+                );
+
+                // 敵ターン開始
+                _battleManager.StartEnemyTurn();
+
                 break;
+
+            //攻撃中のステート
+            case BattleState.Attacking:
+
+                break;
+
             //AIステート
             case BattleState.EnemyTurn:
                 break;
         }
     }
 
+    /// <summary>
+    /// 指定したユニットの攻撃範囲を表示する関数
+    /// </summary>
+    /// <param name="unit"></param>
     public void ShowAttackRange(Unit unit)
     {
         if (unit == null || unit.RangeData == null)
@@ -250,6 +396,18 @@ public class GridManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 選択中のユニットを解除し、攻撃範囲をクリアする関数
+    /// </summary>
+    public void ClearBattleSelection()
+    {
+        ClearAttackRange();
+        _selectedUnit = null;
+    }
+
+    /// <summary>
+    /// 攻撃範囲をクリアする関数
+    /// </summary>
     private void ClearAttackRange()
     {
         for (int x = 0; x < width; x++)
@@ -261,6 +419,10 @@ public class GridManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 選択したユニットを設定
+    /// </summary>
+    /// <param name="unit"></param>
     private void SelectUnit(Unit unit)
     {
         ClearSelection();
@@ -268,6 +430,10 @@ public class GridManager : MonoBehaviour
         _selectedUnit.CurrentCell.SetMaterial(_selectedMaterial);
     }
 
+
+    /// <summary>
+    /// 選択をクリアする
+    /// </summary>
     private void ClearSelection()
     {
         if (_selectedUnit == null)
@@ -277,6 +443,10 @@ public class GridManager : MonoBehaviour
         _selectedUnit = null;
     }
 
+    /// <summary>
+    ///materialを元に戻す
+    /// </summary>
+    /// <param name="cell"></param>
     private void SetDefaultMaterial(GridCell cell)
     {
         bool isWhite = (cell.Position.x + cell.Position.y) % 2 == 0;

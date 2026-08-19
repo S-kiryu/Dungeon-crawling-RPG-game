@@ -1,5 +1,6 @@
-using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 public class Unit : MonoBehaviour
 {
     public CurrentStatus Status { get; private set; }
@@ -27,13 +28,28 @@ public class Unit : MonoBehaviour
         return true;
     }
 
-    public void MoveTo(GridCell destination, System.Action onComplete)
+    /// <summary>
+    /// 指定されたセルまで移動する
+    /// </summary>
+    /// <param name="path"></param>
+    /// <param name="onComplete"></param>
+    public void MoveAlongPath(
+    IReadOnlyList<GridCell> path,
+    System.Action onComplete)
     {
-        if (_isMoving)
+        if (_isMoving ||
+            path == null ||
+            path.Count < 2)
+        {
             return;
+        }
 
-        CurrentCell = destination;
-        StartCoroutine(MoveRoutine(destination.transform.position, onComplete));
+        // 最終目的地を現在セルとして設定
+        CurrentCell = path[path.Count - 1];
+
+        StartCoroutine(
+            MovePathRoutine(path, onComplete)
+        );
     }
 
     public void TakeDamage(int damage)
@@ -58,23 +74,42 @@ public class Unit : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    private IEnumerator MoveRoutine(Vector3 destinationPosition, System.Action onComplete)
+    /// <summary>
+    /// 指定されたパスに沿って移動するコルーチン
+    /// </summary>
+    /// <param name="path"></param>
+    /// <param name="onComplete"></param>
+    /// <returns></returns>
+    private IEnumerator MovePathRoutine(
+    IReadOnlyList<GridCell> path,
+    System.Action onComplete)
     {
         _isMoving = true;
 
-        while (Vector3.Distance(transform.position, destinationPosition) > 0.01f)
+        // path[0]は移動開始地点なので1から開始
+        for (int i = 1; i < path.Count; i++)
         {
-            transform.position = Vector3.MoveTowards(
-                transform.position,
-                destinationPosition,
-                Status.Speed * Time.deltaTime);
+            Vector3 destinationPosition =
+                path[i].transform.position;
 
-            yield return null;
+            while (Vector3.Distance(
+                       transform.position,
+                       destinationPosition) > 0.01f)
+            {
+                transform.position =
+                    Vector3.MoveTowards(
+                        transform.position,
+                        destinationPosition,
+                        Status.Speed * Time.deltaTime
+                    );
+
+                yield return null;
+            }
+
+            transform.position = destinationPosition;
         }
 
-        transform.position = destinationPosition;
         _isMoving = false;
-
         onComplete?.Invoke();
     }
 }
