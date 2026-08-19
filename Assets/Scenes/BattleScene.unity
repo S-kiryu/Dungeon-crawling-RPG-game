@@ -1382,6 +1382,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a044dfb87ad126f48a6c711d57e1ee1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyTurnController
+  _unitManager: {fileID: 1840709410}
+  _gridManager: {fileID: 825214050}
+  _attackWaitSeconds: 0.5
 --- !u!4 &1809144745
 Transform:
   m_ObjectHideFlags: 0

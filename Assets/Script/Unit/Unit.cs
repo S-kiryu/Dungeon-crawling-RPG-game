@@ -11,6 +11,20 @@ public class Unit : MonoBehaviour
     public bool IsMoving => _isMoving;
     public bool IsDead => Status.CurrentHP <= 0;
 
+    [SerializeField]
+    private Color _damageColor = Color.red;
+
+    [SerializeField]
+    private float _damageFlashSeconds = 0.2f;
+
+    private Renderer[] _renderers;
+    private Coroutine _damageFlashCoroutine;
+
+    private void Awake()
+    {
+        _renderers = GetComponentsInChildren<Renderer>();
+    }
+
     public bool Initialize(CharacterData characterData, GridCell gridCell, TeamType team, ActionRangeData actionRange)
     {
         if (characterData == null || characterData.Status == null)
@@ -52,19 +66,35 @@ public class Unit : MonoBehaviour
         );
     }
 
+    /// <summary>
+    /// 攻撃処理
+    /// </summary>
+    /// <param name="damage"></param>
     public void TakeDamage(int damage)
     {
+        if (IsDead)
+            return;
+
         damage -= Status.Defense;
 
-        if (damage < 0) damage = 0;
+        if (damage < 0)
+            damage = 0;
 
         Status.CurrentHP -= damage;
 
-        if (Status.CurrentHP <= 0)
-        {
+        bool died = Status.CurrentHP <= 0;
+
+        if (died)
             Status.CurrentHP = 0;
-            Dead();
+
+        if (_damageFlashCoroutine != null)
+        {
+            StopCoroutine(_damageFlashCoroutine);
         }
+
+        _damageFlashCoroutine = StartCoroutine(
+            DamageFlashRoutine(died)
+        );
     }
 
     private void Dead() 
@@ -72,6 +102,68 @@ public class Unit : MonoBehaviour
         CurrentCell.RemoveUnit();
         CurrentCell = null;
         gameObject.SetActive(false);
+    }
+
+    /// <summary>
+    /// ダメージを受けた際に赤く点滅させるコルーチン
+    /// </summary>
+    /// <param name="dieAfterFlash"></param>
+    /// <returns></returns>
+    private IEnumerator DamageFlashRoutine(
+    bool dieAfterFlash)
+    {
+        MaterialPropertyBlock[] originalBlocks =
+            new MaterialPropertyBlock[_renderers.Length];
+
+        for (int i = 0; i < _renderers.Length; i++)
+        {
+            Renderer targetRenderer = _renderers[i];
+
+            MaterialPropertyBlock originalBlock =
+                new MaterialPropertyBlock();
+
+            targetRenderer.GetPropertyBlock(originalBlock);
+            originalBlocks[i] = originalBlock;
+
+            MaterialPropertyBlock damageBlock =
+                new MaterialPropertyBlock();
+
+            targetRenderer.GetPropertyBlock(damageBlock);
+
+            // URP Litなど
+            damageBlock.SetColor(
+                "_BaseColor",
+                _damageColor
+            );
+
+            // Standard Shaderなど
+            damageBlock.SetColor(
+                "_Color",
+                _damageColor
+            );
+
+            targetRenderer.SetPropertyBlock(damageBlock);
+        }
+
+        yield return new WaitForSeconds(
+            _damageFlashSeconds
+        );
+
+        // 元の見た目へ戻す
+        for (int i = 0; i < _renderers.Length; i++)
+        {
+            _renderers[i].SetPropertyBlock(
+                originalBlocks[i]
+            );
+        }
+
+        _damageFlashCoroutine = null;
+
+        // 倒された場合も赤い表示を見せてから消す
+        if (dieAfterFlash)
+        {
+            Dead();
+        }
     }
 
     /// <summary>
