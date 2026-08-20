@@ -1,12 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// マップUIを管理するクラス
+/// </summary>
 public class MapUI : MonoBehaviour
 {
     [SerializeField] private MapNodeUI _nodePrefab;
     [SerializeField] private RectTransform _nodeParent;
-    [SerializeField] private float _columnSpacing = 200f;
-    [SerializeField] private float _nodeSpacing = 100f;
+    [SerializeField] private float _columnSpacing = 200f;// 列の間隔
+    [SerializeField] private float _nodeSpacing = 100f;// ノードの間隔
     [SerializeField] private MapLineUI _linePrefab;
 
     private readonly Dictionary<MapNode, RectTransform> _nodeRects = new();

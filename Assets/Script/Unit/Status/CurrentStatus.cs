@@ -7,7 +7,7 @@ public class CurrentStatus
     public int Attack;
     public int Defense;
     public int Speed;
-    public int MoveSpeed;
+    public int MoveLength;
     public int Weight;
 
     public CurrentStatus(StatusBase status)
@@ -18,7 +18,7 @@ public class CurrentStatus
         Attack = status.Attack;
         Defense = status.Deffens;
         Speed = status.Speed;
-        MoveSpeed = status.MoveSpeed;
+        MoveLength = status.MoveLength;
         Weight = status.Weight;
     }
 }

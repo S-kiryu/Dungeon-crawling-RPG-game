@@ -9,11 +9,16 @@ public class UnitManager : MonoBehaviour
 
     private readonly List<Unit> _units = new();
 
+    public IReadOnlyList<Unit> Units => _units;
+
     private void Start()
     {
         SetUP();
     }
 
+    /// <summary>
+    /// 初期ユニットを生成して配置します。
+    /// </summary>
     private void SetUP() 
     {
         foreach (UnitSpawnSetting setting in _initialUnits)
@@ -29,5 +34,18 @@ public class UnitManager : MonoBehaviour
             if (unit != null)
                 _units.Add(unit);
         }
+    }
+
+    /// <summary>
+    /// 指定されたチームの生存しているユニットを取得します。
+    /// </summary>
+    /// <param name="team"></param>
+    /// <returns></returns>
+    public List<Unit> GetLivingUnits(TeamType team)
+    {
+        return _units.FindAll(unit =>
+            unit != null &&
+            !unit.IsDead &&
+            unit.Team == team);
     }
 }

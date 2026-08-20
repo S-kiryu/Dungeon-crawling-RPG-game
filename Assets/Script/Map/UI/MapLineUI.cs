@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// マップ上の線を描画するUIクラス
+/// </summary>
 public class MapLineUI : MonoBehaviour
 {
     [SerializeField] private float _thickness = 5f;
