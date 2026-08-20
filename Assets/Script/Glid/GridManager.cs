@@ -272,20 +272,6 @@ public class GridManager : MonoBehaviour
     {
         switch (_battleManager.CurrentState)
         {
-            //キャラ選択用のステート
-            case BattleState.SelectUnit:
-                if (!clickedCell.IsOccupied)
-                    return;
-                if (clickedCell.CurrentUnit.Team != TeamType.Player)
-                {
-                    Debug.Log("playerじゃないよ");
-                    return;
-                }
-                //移動選択のステートへ
-                SelectUnit(clickedCell.CurrentUnit);
-                _battleManager.ChangeState(BattleState.SetMove);
-                break;
-
             //キャラを移動させるステート
             case BattleState.SelectMoveTarget:
                 if (_selectedUnit == null)
@@ -355,8 +341,7 @@ public class GridManager : MonoBehaviour
                     _selectedUnit.Status.Attack
                 );
 
-                // 敵ターン開始
-                _battleManager.StartEnemyTurn();
+                _battleManager.CompleteCurrentAction();
 
                 break;
 
@@ -429,6 +414,27 @@ public class GridManager : MonoBehaviour
         ClearSelection();
         _selectedUnit = unit;
         _selectedUnit.CurrentCell.SetMaterial(_selectedMaterial);
+    }
+
+    public void PreparePlayerAction(Unit unit)
+    {
+        ClearBattleSelection();
+
+        if (unit == null ||
+            unit.IsDead ||
+            unit.Team != TeamType.Player)
+        {
+            return;
+        }
+
+        _selectedUnit = unit;
+
+        if (_selectedUnit.CurrentCell != null)
+        {
+            _selectedUnit.CurrentCell.SetMaterial(
+                _selectedMaterial
+            );
+        }
     }
 
 

@@ -10,10 +10,12 @@ public class UnitManager : MonoBehaviour
     private readonly List<Unit> _units = new();
 
     public IReadOnlyList<Unit> Units => _units;
+    public event System.Action UnitsReady;
 
     private void Start()
     {
         SetUP();
+        UnitsReady?.Invoke();
     }
 
     /// <summary>
