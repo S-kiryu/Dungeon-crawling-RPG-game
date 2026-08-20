@@ -17,6 +17,9 @@ public class Unit : MonoBehaviour
     [SerializeField]
     private float _damageFlashSeconds = 0.2f;
 
+    [SerializeField]
+    private float _moveAnimationSpeed = 5f;
+
     private Renderer[] _renderers;
     private Coroutine _damageFlashCoroutine;
 
@@ -192,7 +195,7 @@ public class Unit : MonoBehaviour
                     Vector3.MoveTowards(
                         transform.position,
                         destinationPosition,
-                        Status.Speed * Time.deltaTime
+                        _moveAnimationSpeed * Time.deltaTime
                     );
 
                 yield return null;
