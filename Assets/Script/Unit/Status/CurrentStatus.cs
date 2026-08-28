@@ -1,6 +1,7 @@
 [System.Serializable]
 public class CurrentStatus
 {
+    public int Level;
     public int MaxHP;
     public int CurrentHP;
 
@@ -12,6 +13,8 @@ public class CurrentStatus
 
     public CurrentStatus(StatusBase status)
     {
+        Level = status.Level;
+
         MaxHP = status.HP;
         CurrentHP = status.HP;
 

@@ -2,6 +2,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Battle/Character Status")]
 public class StatusBase : ScriptableObject
 {
+    public int Level = 0;
     public int HP = 0;
     public int Attack = 0;
     public int Deffens = 0;

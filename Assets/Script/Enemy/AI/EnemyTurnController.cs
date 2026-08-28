@@ -13,19 +13,16 @@ public class EnemyTurnController : MonoBehaviour
     [SerializeField]
     private float _attackWaitSeconds = 0.5f;
 
-    public IEnumerator ExecuteTurn()
+    public IEnumerator ExecuteAction(Unit enemy)
     {
-        List<Unit> enemies =
-            _unitManager.GetLivingUnits(TeamType.Enemy);
-
-        // 敵を1体ずつ行動させる
-        foreach (Unit enemy in enemies)
+        if (enemy == null ||
+            enemy.IsDead ||
+            enemy.Team != TeamType.Enemy)
         {
-            if (enemy == null || enemy.IsDead)
-                continue;
-
-            yield return ExecuteEnemyAction(enemy);
+            yield break;
         }
+
+        yield return ExecuteEnemyAction(enemy);
     }
 
     private IEnumerator ExecuteEnemyAction(Unit enemy)

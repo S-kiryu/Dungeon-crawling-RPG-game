@@ -270,105 +270,51 @@ public class GridManager : MonoBehaviour
     /// <param name="clickedCell"></param>
     private void OnCellClicked(GridCell clickedCell)
     {
-        switch (_battleManager.CurrentState)
+        if (clickedCell == null)
+            return;
+
+        _battleManager.OnCellClicked(clickedCell);
+    }
+
+    /// <summary>
+    /// 対象セルがユニットの行動範囲内か判定する
+    /// </summary>
+    public bool IsInActionRange(
+        Unit unit,
+        GridCell targetCell)
+    {
+        if (unit == null ||
+            unit.CurrentCell == null ||
+            unit.RangeData == null ||
+            unit.RangeData.Offsets == null ||
+            targetCell == null)
         {
-            //キャラ選択用のステート
-            case BattleState.SelectUnit:
-                if (!clickedCell.IsOccupied)
-                    return;
-                if (clickedCell.CurrentUnit.Team != TeamType.Player)
-                {
-                    Debug.Log("playerじゃないよ");
-                    return;
-                }
-                //移動選択のステートへ
-                SelectUnit(clickedCell.CurrentUnit);
-                _battleManager.ChangeState(BattleState.SetMove);
-                break;
-
-            //キャラを移動させるステート
-            case BattleState.SelectMoveTarget:
-                if (_selectedUnit == null)
-                    return;
-
-                GridCell previousCell = _selectedUnit.CurrentCell;
-                Unit movingUnit = _selectedUnit;
-
-                bool startedMoving = TryMoveUnit(
-                    movingUnit,
-                    clickedCell.Position,
-                    () =>
-                    {
-                        // 移動完了後に攻撃・待機を選択可能にする
-                        _battleManager.ChangeState(
-                            BattleState.SelectAfterMoveCommand
-                        );
-
-                        ShowAttackRange(movingUnit);
-                    }
-                );
-
-                if (startedMoving)
-                {
-                    SetDefaultMaterial(previousCell);
-
-                    _battleManager.ChangeState(
-                        BattleState.Moving
-                    );
-                }
-
-                break;
-
-            //ボタンで呼ばれてる
-            //敵を選択した時のステート
-            case BattleState.SelectAttackTarget:
-                if (_selectedUnit == null ||
-                    _selectedUnit.RangeData == null ||
-                    _selectedUnit.RangeData.Offsets == null ||
-                    !clickedCell.IsOccupied)
-                    return;
-
-                //攻撃範囲内かどうかの判定
-                Vector2Int targetOffset = clickedCell.Position - _selectedUnit.CurrentCell.Position;
-                bool isInActionRange = false;
-
-                foreach (Vector2Int offset in _selectedUnit.RangeData.Offsets)
-                {
-                    if (offset == targetOffset)
-                    {
-                        isInActionRange = true;
-                        break;
-                    }
-                }
-
-                if (!isInActionRange)
-                    return;
-                Unit targetUnit = clickedCell.CurrentUnit;
-
-                if (targetUnit.Team != TeamType.Enemy)
-                    return;
-
-                _battleManager.ChangeState(BattleState.Attacking);
-
-                // 攻撃処理
-                targetUnit.TakeDamage(
-                    _selectedUnit.Status.Attack
-                );
-
-                // 敵ターン開始
-                _battleManager.StartEnemyTurn();
-
-                break;
-
-            //攻撃中のステート
-            case BattleState.Attacking:
-
-                break;
-
-            //AIステート
-            case BattleState.EnemyTurn:
-                break;
+            return false;
         }
+
+        Vector2Int targetOffset =
+            targetCell.Position -
+            unit.CurrentCell.Position;
+
+        foreach (Vector2Int offset in
+                 unit.RangeData.Offsets)
+        {
+            if (offset == targetOffset)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 指定セルを通常のマテリアルへ戻す
+    /// </summary>
+    public void RestoreCellMaterial(GridCell cell)
+    {
+        if (cell == null)
+            return;
+
+        SetDefaultMaterial(cell);
     }
 
     /// <summary>
@@ -429,6 +375,27 @@ public class GridManager : MonoBehaviour
         ClearSelection();
         _selectedUnit = unit;
         _selectedUnit.CurrentCell.SetMaterial(_selectedMaterial);
+    }
+
+    public void PreparePlayerAction(Unit unit)
+    {
+        ClearBattleSelection();
+
+        if (unit == null ||
+            unit.IsDead ||
+            unit.Team != TeamType.Player)
+        {
+            return;
+        }
+
+        _selectedUnit = unit;
+
+        if (_selectedUnit.CurrentCell != null)
+        {
+            _selectedUnit.CurrentCell.SetMaterial(
+                _selectedMaterial
+            );
+        }
     }
 
 

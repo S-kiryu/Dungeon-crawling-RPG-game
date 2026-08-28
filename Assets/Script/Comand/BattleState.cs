@@ -3,12 +3,14 @@
 /// </summary>
 public enum BattleState
 {
-    SelectUnit,
-    SetMove,
+    PreparingTurn,
+    SelectCommand,
     SelectMoveTarget,
     Moving,
-    SelectAfterMoveCommand,
     SelectAttackTarget,
     Attacking,
-    EnemyTurn
+    SelectSkillTarget,
+    UsingSkill,
+    EnemyTurn,
+    BattleFinished
 }
