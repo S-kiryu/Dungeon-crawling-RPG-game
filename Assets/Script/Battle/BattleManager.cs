@@ -18,6 +18,9 @@ public class BattleManager : MonoBehaviour
 
     private int _turnIndex = -1;
 
+    private bool _hasMoved;
+    private bool _hasUsedMainAction;
+
     public Unit CurrentTurnUnit { get; private set; }
 
     public int RoundCount { get; private set; }
@@ -25,7 +28,31 @@ public class BattleManager : MonoBehaviour
     public BattleState CurrentState { get; private set; }
         = BattleState.PreparingTurn;
 
-    private bool _isChangingTurn;
+    public bool CanMove =>
+        IsPlayerTurn &&
+        !_hasMoved &&
+        !_hasUsedMainAction &&
+        CurrentState == BattleState.SelectCommand;
+
+    public bool CanAttack =>
+        IsPlayerTurn &&
+        !_hasUsedMainAction &&
+        CurrentState == BattleState.SelectCommand;
+
+    public bool CanUseSkill =>
+        IsPlayerTurn &&
+        !_hasUsedMainAction &&
+        CurrentState == BattleState.SelectCommand;
+
+    public bool CanWait =>
+        IsPlayerTurn &&
+        CurrentState != BattleState.Moving &&
+        CurrentState != BattleState.Attacking &&
+        CurrentState != BattleState.UsingSkill;
+
+    private bool IsPlayerTurn =>
+        CurrentTurnUnit != null &&
+        CurrentTurnUnit.Team == TeamType.Player;
 
     private void Awake()
     {
@@ -95,8 +122,11 @@ public class BattleManager : MonoBehaviour
     /// <param name="unit"></param>
     private void StartPlayerAction(Unit unit)
     {
+        _hasMoved = false;
+        _hasUsedMainAction = false;
+
         _gridManager.PreparePlayerAction(unit);
-        ChangeState(BattleState.SetMove);
+        ChangeState(BattleState.SelectCommand);
     }
 
     /// <summary>
@@ -152,14 +182,41 @@ public class BattleManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 現在の行動を完了する
+    /// 現在の行動を終了する
     /// </summary>
     public void CompleteCurrentAction()
     {
         _gridManager.ClearBattleSelection();
         CurrentTurnUnit = null;
 
+        _hasMoved = false;
+        _hasUsedMainAction = false;
+
         AdvanceTurn();
+    }
+
+    /// <summary>
+    /// GridManagerからクリックされたマスを受け取る
+    /// </summary>
+    public void OnCellClicked(GridCell clickedCell)
+    {
+        if (!IsPlayerTurn || clickedCell == null)
+            return;
+
+        switch (CurrentState)
+        {
+            case BattleState.SelectMoveTarget:
+                TryExecuteMove(clickedCell);
+                break;
+
+            case BattleState.SelectAttackTarget:
+                TryExecuteAttack(clickedCell);
+                break;
+
+            case BattleState.SelectSkillTarget:
+                TryExecuteSkill(clickedCell);
+                break;
+        }
     }
 
     /// <summary>
@@ -167,14 +224,8 @@ public class BattleManager : MonoBehaviour
     /// </summary>
     public void OnMoveButton()
     {
-        if (CurrentState != BattleState.SetMove)
-        {
-            Debug.LogWarning(
-                "先にキャラを選択してください"
-            );
-
+        if (!CanMove)
             return;
-        }
 
         ChangeState(BattleState.SelectMoveTarget);
     }
@@ -184,13 +235,25 @@ public class BattleManager : MonoBehaviour
     /// </summary>
     public void OnAttackButton()
     {
-        if (CurrentState !=
-            BattleState.SelectAfterMoveCommand)
-        {
+        if (!CanAttack)
             return;
-        }
 
         ChangeState(BattleState.SelectAttackTarget);
+
+        _gridManager.ShowAttackRange(
+            CurrentTurnUnit
+        );
+    }
+
+    /// <summary>
+    /// スキルボタンが押されたときの処理
+    /// </summary>
+    public void OnSkillButton()
+    {
+        if (!CanUseSkill)
+            return;
+
+        ChangeState(BattleState.SelectSkillTarget);
     }
 
     /// <summary>
@@ -198,17 +261,108 @@ public class BattleManager : MonoBehaviour
     /// </summary>
     public void OnWaitButton()
     {
-        if (CurrentState !=
-                BattleState.SelectAfterMoveCommand &&
-            CurrentState !=
-                BattleState.SelectMoveTarget &&
-            CurrentState !=
-                BattleState.SelectAttackTarget)
+        if (!CanWait)
+            return;
+
+        CompleteCurrentAction();
+    }
+
+    /// <summary>
+    /// そこに移動できるかどうか判定する
+    /// </summary>
+    /// <param name="destination"></param>
+    private void TryExecuteMove(GridCell destination)
+    {
+        if (!IsPlayerTurn ||
+            _hasMoved ||
+            _hasUsedMainAction ||
+            CurrentState != BattleState.SelectMoveTarget)
         {
             return;
         }
 
-        CompleteCurrentAction();
+        Unit movingUnit = CurrentTurnUnit;
+        GridCell previousCell = movingUnit.CurrentCell;
+
+        bool startedMoving = _gridManager.TryMoveUnit(
+            movingUnit,
+            destination.Position,
+            () =>
+            {
+                _hasMoved = true;
+
+                _gridManager.PreparePlayerAction(
+                    movingUnit
+                );
+
+                ChangeState(BattleState.SelectCommand);
+            }
+        );
+
+        if (!startedMoving)
+            return;
+
+        _gridManager.RestoreCellMaterial(
+            previousCell
+        );
+
+        ChangeState(BattleState.Moving);
+    }
+
+    private void TryExecuteAttack(GridCell clickedCell)
+    {
+        if (!IsPlayerTurn ||
+            _hasUsedMainAction ||
+            CurrentState != BattleState.SelectAttackTarget ||
+            !clickedCell.IsOccupied)
+        {
+            return;
+        }
+
+        Unit attacker = CurrentTurnUnit;
+        Unit target = clickedCell.CurrentUnit;
+
+        if (target == null ||
+            target.Team != TeamType.Enemy ||
+            !_gridManager.IsInActionRange(
+                attacker,
+                clickedCell))
+        {
+            return;
+        }
+
+        ChangeState(BattleState.Attacking);
+
+        target.TakeDamage(
+            attacker.Status.Attack
+        );
+
+        _hasUsedMainAction = true;
+
+        _gridManager.PreparePlayerAction(
+            attacker
+        );
+
+        ChangeState(BattleState.SelectCommand);
+    }
+
+    private void TryExecuteSkill(GridCell clickedCell)
+    {
+        if (!IsPlayerTurn ||
+            _hasUsedMainAction ||
+            CurrentState != BattleState.SelectSkillTarget)
+        {
+            return;
+        }
+
+        // TODO: 選択中のスキル効果を適用する。
+        _hasUsedMainAction = true;
+
+        _gridManager.PreparePlayerAction(
+            CurrentTurnUnit
+        );
+
+        ChangeState(BattleState.SelectCommand);
     }
 
     /// <summary>
