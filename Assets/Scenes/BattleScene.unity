@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 273792553}
   - component: {fileID: 273792555}
   m_Layer: 5
-  m_Name: Image
+  m_Name: CommandView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1744,12 +1744,10 @@ MonoBehaviour:
   _gridManager: {fileID: 825214050}
   _unitGenerator: {fileID: 1840709409}
   _initialUnits:
-  - CharacterData: {fileID: 11400000, guid: 012c51ce43d6ba34fba56409f24c1cce, type: 2}
+  - CharacterData: {fileID: 11400000, guid: fb4e7a8aa2883b348991ab691a0eb836, type: 2}
     GridPosition: {x: 0, y: 0}
   - CharacterData: {fileID: 11400000, guid: 012c51ce43d6ba34fba56409f24c1cce, type: 2}
     GridPosition: {x: 1, y: 0}
-  - CharacterData: {fileID: 11400000, guid: fb4e7a8aa2883b348991ab691a0eb836, type: 2}
-    GridPosition: {x: 1, y: 3}
 --- !u!4 &1840709411
 Transform:
   m_ObjectHideFlags: 0

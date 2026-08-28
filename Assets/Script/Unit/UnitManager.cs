@@ -5,7 +5,11 @@ public class UnitManager : MonoBehaviour
 {
     [SerializeField] private GridManager _gridManager;
     [SerializeField] private UnitGenerator _unitGenerator;
-    [SerializeField] private UnitSpawnSetting[] _initialUnits;
+
+    [Header("使うユニットを設定する場所")]
+    [SerializeField] private UnitSettingData[] _initialUnits;
+
+    [Header("スキルをセットする場所")]
 
     private readonly List<Unit> _units = new();
 
@@ -23,7 +27,7 @@ public class UnitManager : MonoBehaviour
     /// </summary>
     private void SetUP() 
     {
-        foreach (UnitSpawnSetting setting in _initialUnits)
+        foreach (UnitSettingData setting in _initialUnits)
         {
             if (!_gridManager.TryGetCell(setting.GridPosition, out GridCell cell))
             {
