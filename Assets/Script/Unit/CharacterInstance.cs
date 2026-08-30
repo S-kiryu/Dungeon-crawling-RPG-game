@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -21,12 +22,16 @@ public class CharacterInstance
     private CurrentStatus _status;
 
     [SerializeField]
+    private List<SkillData> _skills = new();
+
+    [SerializeField]
     private bool _isDead;
 
     public string InstanceId => _instanceId;
     public CharacterData CharacterData => _characterData;
     public CharacterRarity Rarity => _rarity;
     public CurrentStatus Status => _status;
+    public IReadOnlyList<SkillData> Skills => _skills;
     public bool IsDead => _isDead;
 
     public bool CanDeploy =>
@@ -37,12 +42,16 @@ public class CharacterInstance
     public CharacterInstance(
         CharacterData characterData,
         CharacterRarity rarity,
-        CurrentStatus generatedStatus)
+        CurrentStatus generatedStatus,
+        IReadOnlyList<SkillData> generatedSkills)
     {
-        _instanceId = Guid.NewGuid().ToString();
+        _instanceId = Guid.NewGuid().ToString("N");
         _characterData = characterData;
         _rarity = rarity;
-        _status = generatedStatus;
+        _status = new CurrentStatus(generatedStatus);
+        _skills = generatedSkills != null
+            ? new List<SkillData>(generatedSkills)
+            : new List<SkillData>();
         _isDead = false;
     }
 
