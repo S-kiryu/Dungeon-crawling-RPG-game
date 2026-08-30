@@ -32,6 +32,10 @@ public class GachaManager : MonoBehaviour
         DrawOne();
     }
 
+    /// <summary>
+    /// 一回のガチャ処理
+    /// </summary>
+    /// <returns></returns>
     public CharacterInstance DrawOne()
     {
         if (_generator == null)
@@ -71,6 +75,11 @@ public class GachaManager : MonoBehaviour
         return character;
     }
 
+    /// <summary>
+    /// ガチャ結果を表示する物
+    /// </summary>
+    /// <param name="character"></param>
+    /// <returns></returns>
     private string CreateResultMessage(
         CharacterInstance character)
     {

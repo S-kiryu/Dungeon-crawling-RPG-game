@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bdf7ac3625612841977cf21fba3df90, type: 3}
+  m_Name: GachaSettings
+  m_EditorClassIdentifier: Assembly-CSharp::GachaSettings
+  CharacterPool:
+  - CharacterData: {fileID: 11400000, guid: 012c51ce43d6ba34fba56409f24c1cce, type: 2}
+    Weight: 1
+  RaritySettings:
+  - Rarity: 1
+    Weight: 10000
+    MinimumStatusMultiplier: 1
+    MaximumStatusMultiplier: 1
+    SkillCount: 1
+  - Rarity: 2
+    Weight: 5000
+    MinimumStatusMultiplier: 1.2
+    MaximumStatusMultiplier: 1.2
+    SkillCount: 1
+  - Rarity: 3
+    Weight: 1000
+    MinimumStatusMultiplier: 2
+    MaximumStatusMultiplier: 2
+    SkillCount: 2
+  - Rarity: 4
+    Weight: 100
+    MinimumStatusMultiplier: 4
+    MaximumStatusMultiplier: 4
+    SkillCount: 3
+  - Rarity: 5
+    Weight: 1
+    MinimumStatusMultiplier: 10
+    MaximumStatusMultiplier: 10
+    SkillCount: 4
+  SkillPool:
+  - SkillData: {fileID: 0}
+    Weight: 1
