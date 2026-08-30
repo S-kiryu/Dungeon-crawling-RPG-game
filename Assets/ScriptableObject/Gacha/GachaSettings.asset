@@ -33,13 +33,13 @@ MonoBehaviour:
     SkillCount: 2
   - Rarity: 4
     Weight: 100
-    MinimumStatusMultiplier: 4
-    MaximumStatusMultiplier: 4
+    MinimumStatusMultiplier: 8
+    MaximumStatusMultiplier: 8
     SkillCount: 3
   - Rarity: 5
     Weight: 1
-    MinimumStatusMultiplier: 10
-    MaximumStatusMultiplier: 10
+    MinimumStatusMultiplier: 20
+    MaximumStatusMultiplier: 20
     SkillCount: 4
   SkillPool:
   - SkillData: {fileID: 0}
