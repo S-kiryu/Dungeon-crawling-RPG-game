@@ -2,6 +2,7 @@
 public class CurrentStatus
 {
     public int Level;
+
     public int MaxHP;
     public int CurrentHP;
 
@@ -11,6 +12,10 @@ public class CurrentStatus
     public int MoveLength;
     public int Weight;
 
+    /// <summary>
+    /// CharacterDataの基礎ステータスから生成する。
+    /// 敵や初期キャラの生成で使用する。
+    /// </summary>
     public CurrentStatus(StatusBase status)
     {
         Level = status.Level;
@@ -23,5 +28,22 @@ public class CurrentStatus
         Speed = status.Speed;
         MoveLength = status.MoveLength;
         Weight = status.Weight;
+    }
+
+    /// <summary>
+    /// 所持キャラのステータスを戦闘用にコピーする。
+    /// </summary>
+    public CurrentStatus(CurrentStatus source)
+    {
+        Level = source.Level;
+
+        MaxHP = source.MaxHP;
+        CurrentHP = source.CurrentHP;
+
+        Attack = source.Attack;
+        Defense = source.Defense;
+        Speed = source.Speed;
+        MoveLength = source.MoveLength;
+        Weight = source.Weight;
     }
 }
