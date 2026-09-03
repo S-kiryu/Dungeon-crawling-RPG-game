@@ -195,11 +195,11 @@ public class CharacterSelectionPanel :
         return
             $"{character.Rarity}\n" +
             $"Lv.{status.Level}\n" +
-            $"HP {status.CurrentHP}/" +
+            $"体力 {status.CurrentHP}/" +
             $"{status.MaxHP}\n" +
             $"攻撃 {status.Attack}\n" +
             $"防御 {status.Defense}\n" +
-            $"速度 {status.Speed}";
+            $"素早さ {status.Speed}";
     }
 
     private void Confirm()
