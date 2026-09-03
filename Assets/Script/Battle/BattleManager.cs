@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,6 +21,7 @@ public class BattleManager : MonoBehaviour
 
     private bool _hasMoved;
     private bool _hasUsedMainAction;
+    private bool _battleEnded;
 
     public Unit CurrentTurnUnit { get; private set; }
 
@@ -53,6 +55,8 @@ public class BattleManager : MonoBehaviour
     private bool IsPlayerTurn =>
         CurrentTurnUnit != null &&
         CurrentTurnUnit.Team == TeamType.Player;
+
+    public event Action<bool> BattleEnded;
 
     private void Awake()
     {
@@ -164,19 +168,24 @@ public class BattleManager : MonoBehaviour
         if (hasPlayer && hasEnemy)
             return false;
 
+        if (_battleEnded)
+            return true;
+
+        _battleEnded = true;
+
         CurrentTurnUnit = null;
+
         _gridManager.ClearBattleSelection();
 
-        ChangeState(BattleState.BattleFinished);
+        ChangeState(
+            BattleState.BattleFinished);
 
         if (hasPlayer)
-        {
             Debug.Log("プレイヤーの勝利");
-        }
         else
-        {
             Debug.Log("プレイヤーの敗北");
-        }
+
+        BattleEnded?.Invoke(hasPlayer);
 
         return true;
     }
@@ -334,8 +343,10 @@ public class BattleManager : MonoBehaviour
         ChangeState(BattleState.Attacking);
 
         target.TakeDamage(
-            attacker.Status.Attack
-        );
+    attacker.Status.Attack);
+
+        if (IsBattleFinished())
+            return;
 
         _hasUsedMainAction = true;
 

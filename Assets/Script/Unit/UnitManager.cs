@@ -1,53 +1,109 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class UnitManager : MonoBehaviour
 {
-    [SerializeField] private GridManager _gridManager;
-    [SerializeField] private UnitGenerator _unitGenerator;
+    [SerializeField]
+    private GridManager _gridManager;
 
-    [Header("使うユニットを設定する場所")]
-    [SerializeField] private UnitSettingData[] _initialUnits;
+    [SerializeField]
+    private UnitGenerator _unitGenerator;
 
-    [Header("スキルをセットする場所")]
+    [Header("プレイヤー初期配置")]
+    [SerializeField]
+    private Vector2Int[] _playerSpawnPositions;
+
+    [Header("敵の初期配置")]
+    [SerializeField]
+    private UnitSettingData[] _enemyUnits;
 
     private readonly List<Unit> _units = new();
 
     public IReadOnlyList<Unit> Units => _units;
-    public event System.Action UnitsReady;
+
+    public event Action UnitsReady;
 
     private void Start()
     {
-        SetUP();
+        SpawnFormation();
+        SpawnEnemies();
+
         UnitsReady?.Invoke();
     }
 
-    /// <summary>
-    /// 初期ユニットを生成して配置します。
-    /// </summary>
-    private void SetUP() 
+    private void SpawnFormation()
     {
-        foreach (UnitSettingData setting in _initialUnits)
+        if (FormationManager.Instance == null)
         {
-            if (!_gridManager.TryGetCell(setting.GridPosition, out GridCell cell))
+            Debug.LogError(
+                "FormationManagerが存在しません。");
+            return;
+        }
+
+        List<CharacterInstance> formation =
+            FormationManager.Instance
+                .GetAssignedCharacters();
+
+        int spawnCount = Mathf.Min(
+            formation.Count,
+            _playerSpawnPositions.Length);
+
+        for (int index = 0;
+             index < spawnCount;
+             index++)
+        {
+            if (!_gridManager.TryGetCell(
+                    _playerSpawnPositions[index],
+                    out GridCell cell))
             {
-                Debug.LogWarning($"セルがありません: {setting.GridPosition}");
+                Debug.LogWarning(
+                    $"プレイヤー配置セルがありません: " +
+                    $"{_playerSpawnPositions[index]}");
                 continue;
             }
 
-            Unit unit = _unitGenerator.Spawn(setting.CharacterData, cell);
+            Unit unit = _unitGenerator.Spawn(
+                formation[index],
+                cell);
 
             if (unit != null)
                 _units.Add(unit);
         }
     }
 
-    /// <summary>
-    /// 指定されたチームの生存しているユニットを取得します。
-    /// </summary>
-    /// <param name="team"></param>
-    /// <returns></returns>
-    public List<Unit> GetLivingUnits(TeamType team)
+    private void SpawnEnemies()
+    {
+        foreach (UnitSettingData setting
+                 in _enemyUnits)
+        {
+            if (setting == null ||
+                setting.CharacterData == null)
+            {
+                continue;
+            }
+
+            if (!_gridManager.TryGetCell(
+                    setting.GridPosition,
+                    out GridCell cell))
+            {
+                Debug.LogWarning(
+                    $"敵配置セルがありません: " +
+                    $"{setting.GridPosition}");
+                continue;
+            }
+
+            Unit unit = _unitGenerator.Spawn(
+                setting.CharacterData,
+                cell);
+
+            if (unit != null)
+                _units.Add(unit);
+        }
+    }
+
+    public List<Unit> GetLivingUnits(
+        TeamType team)
     {
         return _units.FindAll(unit =>
             unit != null &&
