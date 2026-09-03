@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ccb33b1081e5b54483771200403773b, type: 3}
   m_Name: TestEnemyStatus
   m_EditorClassIdentifier: Assembly-CSharp::StatusBase
+  Level: 0
   HP: 100
   Attack: 10
   Deffens: 0
-  Speed: 11
+  Speed: 1
   MoveLength: 5
   Weight: 0

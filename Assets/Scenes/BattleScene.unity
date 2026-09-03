@@ -119,6 +119,51 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &221614164
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 221614166}
+  - component: {fileID: 221614165}
+  m_Layer: 0
+  m_Name: BattleResultController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &221614165
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 221614164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97354777b6d7a1e4da1ffd463795e684, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleResultController
+  _battleManager: {fileID: 1367553190}
+--- !u!4 &221614166
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 221614164}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 746.45404, y: -576.4475, z: 3260.229}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 522643922}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &273792551
 GameObject:
   m_ObjectHideFlags: 0
@@ -257,6 +302,7 @@ Transform:
   - {fileID: 1809144745}
   - {fileID: 1367553191}
   - {fileID: 825214051}
+  - {fileID: 221614166}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &567131935
@@ -449,10 +495,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Move
+  m_text: "\u79FB\u52D5"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 2acded3d681d1614592821ad6a150351, type: 2}
+  m_sharedMaterial: {fileID: -2563887191787361016, guid: 2acded3d681d1614592821ad6a150351, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1356,10 +1402,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Wait
+  m_text: "\u5F85\u6A5F"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 2acded3d681d1614592821ad6a150351, type: 2}
+  m_sharedMaterial: {fileID: -2563887191787361016, guid: 2acded3d681d1614592821ad6a150351, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1619,10 +1665,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Skill
+  m_text: "\u30B9\u30AD\u30EB"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 2acded3d681d1614592821ad6a150351, type: 2}
+  m_sharedMaterial: {fileID: -2563887191787361016, guid: 2acded3d681d1614592821ad6a150351, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1743,11 +1789,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnitManager
   _gridManager: {fileID: 825214050}
   _unitGenerator: {fileID: 1840709409}
-  _initialUnits:
+  _playerSpawnPositions:
+  - {x: 0, y: 2}
+  - {x: 0, y: 1}
+  - {x: 0, y: 3}
+  - {x: 1, y: 2}
+  _enemyUnits:
   - CharacterData: {fileID: 11400000, guid: fb4e7a8aa2883b348991ab691a0eb836, type: 2}
-    GridPosition: {x: 0, y: 0}
-  - CharacterData: {fileID: 11400000, guid: 012c51ce43d6ba34fba56409f24c1cce, type: 2}
-    GridPosition: {x: 1, y: 0}
+    GridPosition: {x: 5, y: 1}
+  - CharacterData: {fileID: 11400000, guid: fb4e7a8aa2883b348991ab691a0eb836, type: 2}
+    GridPosition: {x: 5, y: 3}
+  - CharacterData: {fileID: 11400000, guid: fb4e7a8aa2883b348991ab691a0eb836, type: 2}
+    GridPosition: {x: 5, y: 2}
 --- !u!4 &1840709411
 Transform:
   m_ObjectHideFlags: 0
@@ -1820,10 +1873,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Attack
+  m_text: "\u653B\u6483"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 2acded3d681d1614592821ad6a150351, type: 2}
+  m_sharedMaterial: {fileID: -2563887191787361016, guid: 2acded3d681d1614592821ad6a150351, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
