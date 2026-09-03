@@ -1,74 +1,83 @@
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class MapManager : MonoBehaviour
 {
-    [SerializeField] private MapUI _mapUI;
-    [SerializeField] private MapEventManager _mapEventManager;
-    [SerializeField, Tooltip("ボスまで何歩で行けるのか")] private int _mapLength;
-    [SerializeField, Tooltip("最小の横幅")] private int _mapMinimumWidth;
-    [SerializeField, Tooltip("最大の横幅")] private int _mapMaximumWidth;
+    [SerializeField]
+    private MapUI _mapUI;
 
-    //生成したノードを管理するリスト
-    private List<List<MapNode>> _columns; 
-    private MapData _mapData;
-    private MapGenerator _mapGenerator;
-    private MapNode _currentNode;
+    [SerializeField]
+    private MapEventManager _mapEventManager;
 
-    public IReadOnlyList<List<MapNode>> Columns => _columns;
-    public IReadOnlyList<MapNode> SelectableNodes => _currentNode.NextNodes;
-    public MapNode CurrentNode => _currentNode;
+    [SerializeField]
+    private int _mapLength = 5;
 
-    private void Awake()
-    {
-        _mapData = new MapData();
-        _mapGenerator = new MapGenerator();
-    }
+    [SerializeField]
+    private int _mapMinimumWidth = 1;
 
+    [SerializeField]
+    private int _mapMaximumWidth = 3;
+
+    private DungeonRunSession _runSession;
+
+    public IReadOnlyList<List<MapNode>> Columns =>
+        _runSession.Columns;
+
+    public MapNode CurrentNode =>
+        _runSession.CurrentNode;
+
+    public IReadOnlyList<MapNode> SelectableNodes =>
+        _runSession.CurrentNode.NextNodes;
 
     private void Start()
     {
-        _columns = _mapGenerator.GenerateMap(
-            _mapLength,
-            _mapMinimumWidth,
-            _mapMaximumWidth);
+        _runSession =
+            DungeonRunSession.Instance;
 
-        _mapData.SetNextNode(_columns);
-        _currentNode = _columns[0][0];
-
-        _mapUI.ShowMap(Columns, this);
-    }
-
-
-    //各ステートのイベント
-    public void SelectNode(MapNode selectedNode)
-    {
-        if (!_currentNode.NextNodes.Contains(selectedNode))
-            return;
-
-        _currentNode = selectedNode;
-
-        _mapEventManager.Execute(_currentNode);
-
-    }
-    private void DebugMap()
-    {
-        for (int columnIndex = 0; columnIndex < _columns.Count; columnIndex++)
+        if (_runSession == null)
         {
-            List<MapNode> column = _columns[columnIndex];
+            Debug.LogError(
+                "DungeonRunSessionが存在しません。");
+            return;
+        }
 
-            Debug.Log($"--- {columnIndex}列目：{column.Count}ノード ---");
+        // 初回入場時だけマップを生成する
+        if (!_runSession.HasActiveRun)
+        {
+            _runSession.StartNewRun(
+                _mapLength,
+                _mapMinimumWidth,
+                _mapMaximumWidth);
+        }
 
-            for (int nodeIndex = 0; nodeIndex < column.Count; nodeIndex++)
-            {
-                MapNode node = column[nodeIndex];
+        _mapUI.ShowMap(
+            Columns,
+            this);
+    }
 
-                Debug.Log(
-                    $"ノード {nodeIndex} | " +
-                    $"イベント: {node.EventType} | " +
-                    $"接続先数: {node.NextNodes.Count}");
-            }
+    public void SelectNode(
+        MapNode selectedNode)
+    {
+        if (!_runSession.BeginNode(
+                selectedNode))
+        {
+            return;
+        }
+
+        bool waitsForBattleResult =
+            selectedNode.EventType ==
+                MapEventType.Battle ||
+            selectedNode.EventType ==
+                MapEventType.Boss;
+
+        _mapEventManager.Execute(
+            selectedNode);
+
+        // ショップと休憩は仮で即クリア扱い
+        if (!waitsForBattleResult)
+        {
+            _runSession.CompletePendingNode(
+                out _);
         }
     }
 }
