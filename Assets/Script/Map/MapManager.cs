@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// マップの管理を行うクラス
+/// </summary>
 public class MapManager : MonoBehaviour
 {
     [SerializeField]
@@ -55,6 +58,10 @@ public class MapManager : MonoBehaviour
             this);
     }
 
+    /// <summary>
+    /// マップ上のノードを選択する
+    /// </summary>
+    /// <param name="selectedNode"></param>
     public void SelectNode(
         MapNode selectedNode)
     {
@@ -79,5 +86,17 @@ public class MapManager : MonoBehaviour
             _runSession.CompletePendingNode(
                 out _);
         }
+    }
+
+    /// <summary>
+    /// 選択可能なノードかどうかを判定する
+    /// </summary>
+    /// <param name="node"></param>
+    /// <returns></returns>
+    public bool CanSelectNode(MapNode node)
+    {
+        return
+            _runSession != null &&
+            _runSession.CanSelect(node);
     }
 }

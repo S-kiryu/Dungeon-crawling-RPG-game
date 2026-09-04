@@ -5,7 +5,7 @@ public class BossEvent : EventBase
 {
     public override MapEventType EventType =>
         MapEventType.Boss;
-
+    
     public override void Execute(
         MapNode node)
     {

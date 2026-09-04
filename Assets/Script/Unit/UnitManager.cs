@@ -102,6 +102,11 @@ public class UnitManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 指定したチームの生存しているユニットを取得
+    /// </summary>
+    /// <param name="team"></param>
+    /// <returns></returns>
     public List<Unit> GetLivingUnits(
         TeamType team)
     {

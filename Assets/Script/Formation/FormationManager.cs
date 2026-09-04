@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 編成を管理するクラス
+/// </summary>
 [DefaultExecutionOrder(-900)]
 public class FormationManager : MonoBehaviour
 {

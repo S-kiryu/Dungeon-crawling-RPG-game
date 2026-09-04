@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TestEnemyStatus
   m_EditorClassIdentifier: Assembly-CSharp::StatusBase
   Level: 0
-  HP: 100
+  HP: 30
   Attack: 10
   Deffens: 0
   Speed: 1

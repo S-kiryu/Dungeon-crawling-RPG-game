@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 敵ターンの行動を制御するクラス
+/// </summary>
 public class EnemyTurnController : MonoBehaviour
 {
     [SerializeField]
@@ -91,6 +94,11 @@ public class EnemyTurnController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 敵ユニットが攻撃可能なプレイヤーユニットを探す
+    /// </summary>
+    /// <param name="enemy"></param>
+    /// <returns></returns>
     private Unit FindAttackablePlayer(Unit enemy)
     {
         if (enemy == null ||
@@ -129,6 +137,12 @@ public class EnemyTurnController : MonoBehaviour
         return bestTarget;
     }
 
+    /// <summary>
+    /// 攻撃者がターゲットを攻撃可能な範囲にいるか確認する
+    /// </summary>
+    /// <param name="attacker"></param>
+    /// <param name="target"></param>
+    /// <returns></returns>
     private bool IsInAttackRange(
         Unit attacker,
         Unit target)
@@ -155,6 +169,12 @@ public class EnemyTurnController : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// 敵ユニットが最も効果的な攻撃経路を探す
+    /// </summary>
+    /// <param name="enemy"></param>
+    /// <param name="bestPath"></param>
+    /// <returns></returns>
     private bool TryFindBestAttackPath(
         Unit enemy,
         out List<GridCell> bestPath)
@@ -182,13 +202,6 @@ public class EnemyTurnController : MonoBehaviour
             foreach (Vector2Int attackOffset
                      in enemy.RangeData.Offsets)
             {
-                /*
-                 * targetPosition - enemyPosition
-                 *     = attackOffset
-                 *
-                 * enemyPosition
-                 *     = targetPosition - attackOffset
-                 */
                 Vector2Int attackPosition =
                     player.CurrentCell.Position -
                     attackOffset;
@@ -228,6 +241,11 @@ public class EnemyTurnController : MonoBehaviour
         return bestPath != null;
     }
 
+    /// <summary>
+    /// 敵ユニットがターゲットを攻撃する
+    /// </summary>
+    /// <param name="attacker"></param>
+    /// <param name="target"></param>
     private void Attack(
         Unit attacker,
         Unit target)

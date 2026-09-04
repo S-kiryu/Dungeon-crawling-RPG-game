@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// マップ上のイベントを管理するクラス
+/// </summary>
 public class MapEventManager : MonoBehaviour
 {
     [SerializeField] private List<EventBase> _events;

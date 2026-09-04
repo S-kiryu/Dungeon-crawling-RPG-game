@@ -315,11 +315,15 @@ public class BattleManager : MonoBehaviour
         if (!startedMoving)
             return;
 
+        // 移動開始時点で範囲表示を消す
+        _gridManager.ClearBattleSelection();
+
+        ChangeState(BattleState.Moving);
+
         _gridManager.RestoreCellMaterial(
             previousCell
         );
 
-        ChangeState(BattleState.Moving);
     }
 
     private void TryExecuteAttack(GridCell clickedCell)

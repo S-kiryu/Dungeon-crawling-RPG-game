@@ -3,6 +3,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// キャラクター選択パネルを管理するクラス
+/// </summary>
 public class CharacterSelectionPanel :
     MonoBehaviour
 {
@@ -58,6 +61,10 @@ public class CharacterSelectionPanel :
         gameObject.SetActive(false);
     }
 
+    /// <summary>
+    /// 選択された時の処理
+    /// </summary>
+    /// <param name="slotIndex"></param>
     public void Open(int slotIndex)
     {
         if (_formationManager == null)
@@ -79,6 +86,9 @@ public class CharacterSelectionPanel :
         RefreshSelection();
     }
 
+    /// <summary>
+    /// キャラクターカードを生成する
+    /// </summary>
     private void GenerateCharacterCards()
     {
         ClearCharacterCards();
@@ -114,6 +124,9 @@ public class CharacterSelectionPanel :
         }
     }
 
+    /// <summary>
+    /// 生成されたキャラクターカードをクリアする
+    /// </summary>
     private void ClearCharacterCards()
     {
         foreach (CharacterCardUI card
@@ -129,6 +142,10 @@ public class CharacterSelectionPanel :
         _generatedCards.Clear();
     }
 
+    /// <summary>
+    /// キャラクターを選択する
+    /// </summary>
+    /// <param name="character"></param>
     private void SelectCharacter(
         CharacterInstance character)
     {
@@ -138,6 +155,9 @@ public class CharacterSelectionPanel :
         RefreshSelection();
     }
 
+    /// <summary>
+    /// 選択状態を更新する
+    /// </summary>
     private void RefreshSelection()
     {
         foreach (CharacterCardUI card
@@ -186,6 +206,11 @@ public class CharacterSelectionPanel :
         }
     }
 
+    /// <summary>
+    /// 選択されたキャラクターのステータスを作成する
+    /// </summary>
+    /// <param name="character"></param>
+    /// <returns></returns>
     private string CreateStatusText(
         CharacterInstance character)
     {
@@ -202,6 +227,9 @@ public class CharacterSelectionPanel :
             $"素早さ {status.Speed}";
     }
 
+    /// <summary>
+    /// 選択を確定する
+    /// </summary>
     private void Confirm()
     {
         if (_selectedCharacter == null ||
@@ -219,7 +247,10 @@ public class CharacterSelectionPanel :
         if (assigned)
             Close();
     }
-
+    
+    /// <summary>
+    /// 選択されたキャラクターを削除する
+    /// </summary>
     private void RemoveCharacter()
     {
         if (_editingSlotIndex >= 0)

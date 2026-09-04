@@ -317,6 +317,10 @@ public class GridManager : MonoBehaviour
         SetDefaultMaterial(cell);
     }
 
+    /// <summary>
+    /// 移動の範囲を表示する関数
+    /// </summary>
+    /// <param name="unit"></param>
     public void ShowMovementRange(Unit unit)
     {
         if (unit == null ||
