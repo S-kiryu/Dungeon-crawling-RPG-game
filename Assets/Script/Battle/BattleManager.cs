@@ -237,6 +237,10 @@ public class BattleManager : MonoBehaviour
             return;
 
         ChangeState(BattleState.SelectMoveTarget);
+
+        _gridManager.ShowMovementRange(
+            CurrentTurnUnit
+        );
     }
 
     /// <summary>

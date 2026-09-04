@@ -317,6 +317,75 @@ public class GridManager : MonoBehaviour
         SetDefaultMaterial(cell);
     }
 
+    public void ShowMovementRange(Unit unit)
+    {
+        if (unit == null ||
+            unit.CurrentCell == null ||
+            unit.Status == null)
+        {
+            return;
+        }
+
+        // 前に表示していた攻撃範囲などを消す
+        ClearAttackRange();
+
+        Queue<(GridCell cell, int distance)> queue = new();
+        HashSet<GridCell> visited = new();
+
+        queue.Enqueue((unit.CurrentCell, 0));
+        visited.Add(unit.CurrentCell);
+
+        while (queue.Count > 0)
+        {
+            (GridCell currentCell, int distance) =
+                queue.Dequeue();
+
+            // 現在地は選択中のマテリアルにする
+            if (distance == 0)
+            {
+                currentCell.SetMaterial(_selectedMaterial);
+            }
+            else
+            {
+                //仮で攻撃範囲のマテリアルにする
+                currentCell.SetMaterial(
+                    _attackRangeMaterial
+                );
+            }
+
+            if (distance >= unit.Status.MoveLength)
+                continue;
+
+            foreach (Vector2Int direction in Directions)
+            {
+                Vector2Int nextPosition =
+                    currentCell.Position + direction;
+
+                if (!TryGetCell(
+                        nextPosition,
+                        out GridCell nextCell))
+                {
+                    continue;
+                }
+
+                if (visited.Contains(nextCell))
+                    continue;
+
+                if (nextCell.Terrain == TerrainType.Wall)
+                    continue;
+
+                // 他のユニットがいる場所には移動できない
+                if (nextCell.IsOccupied)
+                    continue;
+
+                visited.Add(nextCell);
+                queue.Enqueue(
+                    (nextCell, distance + 1)
+                );
+            }
+        }
+    }
+
     /// <summary>
     /// 指定したユニットの攻撃範囲を表示する関数
     /// </summary>
