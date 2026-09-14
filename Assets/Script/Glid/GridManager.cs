@@ -229,6 +229,9 @@ public class GridManager : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// BFSで探索した経路を逆順にたどって、目的地までの経路を作る
+    /// </summary>
     private List<GridCell> BuildPath(
     Dictionary<GridCell, GridCell> previousCells,
     GridCell destinationCell)
@@ -249,6 +252,9 @@ public class GridManager : MonoBehaviour
         return path;
     }
 
+    /// <summary>
+    /// 指定した座標のグリットセルを取得する関数
+    /// </summary>
     public bool TryGetCell(Vector2Int position, out GridCell cell)
     {
         cell = null;
