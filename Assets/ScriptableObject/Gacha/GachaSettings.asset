@@ -13,7 +13,21 @@ MonoBehaviour:
   m_Name: GachaSettings
   m_EditorClassIdentifier: Assembly-CSharp::GachaSettings
   CharacterPool:
+  - CharacterData: {fileID: 11400000, guid: 59fa17d1aaf8aaf4796a3ba2149352f3, type: 2}
+    Weight: 1
+  - CharacterData: {fileID: 11400000, guid: 20ccb92279bb0cd4faf30d20d5afc4d3, type: 2}
+    Weight: 1
+  - CharacterData: {fileID: 11400000, guid: 457f28bed9025dd46a1cb748580fb33a, type: 2}
+    Weight: 1
+  - CharacterData: {fileID: 11400000, guid: 1e42717f4932114489e0016a9cf9ce83, type: 2}
+    Weight: 1
+  - CharacterData: {fileID: 11400000, guid: 4679b3741079b7e4eb5ed99b5cc3cbf5, type: 2}
+    Weight: 1
+  - CharacterData: {fileID: 11400000, guid: bba0f640b747f4f478830acb12f65d60, type: 2}
+    Weight: 1
   - CharacterData: {fileID: 11400000, guid: 012c51ce43d6ba34fba56409f24c1cce, type: 2}
+    Weight: 1
+  - CharacterData: {fileID: 11400000, guid: 96a04e6f492d30d4b8d1db32eb2bbd19, type: 2}
     Weight: 1
   RaritySettings:
   - Rarity: 1

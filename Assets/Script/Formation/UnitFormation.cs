@@ -9,9 +9,6 @@ using JetBrains.Annotations;
 /// </summary>
 public class UnitFormation : MonoBehaviour
 {
-    [Header("編成画面の設定項目")]
-    private int _formationNums = 4;
-
     private UnitSettingData[] _settingData = null;
     private Image[] Icons;
     private Image _iconPrefab;

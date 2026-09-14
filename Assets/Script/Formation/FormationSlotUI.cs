@@ -71,7 +71,7 @@ public class FormationSlotUI : MonoBehaviour
                     ? character
                         .CharacterData
                         .CharacterName
-                    : "空き";
+                    : "empty";
         }
 
         if (_detailText != null)

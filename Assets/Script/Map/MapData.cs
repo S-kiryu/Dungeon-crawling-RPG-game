@@ -13,7 +13,7 @@ public class MapData
             List<MapNode> currentColumn = columns[columnIndex];
             List<MapNode> nextColumn = columns[columnIndex + 1];
 
-            // 1. 現在列の全ノードに、最低1本の出口を作る
+            //現在列の全ノードに、最低1本の出口を作る
             foreach (MapNode currentNode in currentColumn)
             {
                 MapNode nextNode =
@@ -22,7 +22,7 @@ public class MapData
                 currentNode.AddNextNode(nextNode);
             }
 
-            // 2. 次列の全ノードに、最低1本の入口を保証する
+            //次列の全ノードに、最低1本の入口を保証する
             foreach (MapNode nextNode in nextColumn)
             {
                 bool hasIncomingPath = currentColumn.Exists(
