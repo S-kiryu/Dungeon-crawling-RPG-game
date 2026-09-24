@@ -10,13 +10,8 @@ public class UnitManager : MonoBehaviour
     [SerializeField]
     private UnitGenerator _unitGenerator;
 
-    [Header("プレイヤー初期配置")]
     [SerializeField]
-    private Vector2Int[] _playerSpawnPositions;
-
-    [Header("敵の初期配置")]
-    [SerializeField]
-    private UnitSettingData[] _enemyUnits;
+    private BattleScenarioData _scenario;
 
     private readonly List<Unit> _units = new();
 
@@ -26,56 +21,23 @@ public class UnitManager : MonoBehaviour
 
     private void Start()
     {
-        SpawnFormation();
-        SpawnEnemies();
+        SpawnUnits(_scenario.PlayerUnits);
+        SpawnUnits(_scenario.EnemyUnits);
 
         UnitsReady?.Invoke();
     }
 
-    private void SpawnFormation()
+    /// <summary>
+    /// 指定したユニット設定データに基づいてユニットを生成し、グリッド上に配置する
+    /// </summary>
+    /// <param name="settings"></param>
+    private void SpawnUnits(
+    UnitSettingData[] settings)
     {
-        if (FormationManager.Instance == null)
-        {
-            Debug.LogError(
-                "FormationManagerが存在しません。");
+        if (settings == null)
             return;
-        }
 
-        List<CharacterInstance> formation =
-            FormationManager.Instance
-                .GetAssignedCharacters();
-
-        int spawnCount = Mathf.Min(
-            formation.Count,
-            _playerSpawnPositions.Length);
-
-        for (int index = 0;
-             index < spawnCount;
-             index++)
-        {
-            if (!_gridManager.TryGetCell(
-                    _playerSpawnPositions[index],
-                    out GridCell cell))
-            {
-                Debug.LogWarning(
-                    $"プレイヤー配置セルがありません: " +
-                    $"{_playerSpawnPositions[index]}");
-                continue;
-            }
-
-            Unit unit = _unitGenerator.Spawn(
-                formation[index],
-                cell);
-
-            if (unit != null)
-                _units.Add(unit);
-        }
-    }
-
-    private void SpawnEnemies()
-    {
-        foreach (UnitSettingData setting
-                 in _enemyUnits)
+        foreach (UnitSettingData setting in settings)
         {
             if (setting == null ||
                 setting.CharacterData == null)
@@ -87,9 +49,6 @@ public class UnitManager : MonoBehaviour
                     setting.GridPosition,
                     out GridCell cell))
             {
-                Debug.LogWarning(
-                    $"敵配置セルがありません: " +
-                    $"{setting.GridPosition}");
                 continue;
             }
 

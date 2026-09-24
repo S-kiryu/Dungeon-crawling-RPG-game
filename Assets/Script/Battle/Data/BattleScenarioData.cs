@@ -7,6 +7,10 @@ using UnityEngine;
 public class BattleScenarioData : ScriptableObject
 {
     public string ScenarioName;
+
+    [Header("味方ユニット")]
     public UnitSettingData[] PlayerUnits;
+
+    [Header("敵ユニット")]
     public UnitSettingData[] EnemyUnits;
 }
