@@ -28,6 +28,11 @@ public class BattleManager : MonoBehaviour
     public Unit CurrentTurnUnit { get; private set; }
     public int RoundCount { get; private set; }
 
+    /// <summary>
+    /// 現在、情報表示対象として選択されているユニット。
+    /// </summary>
+    public Unit InspectedUnit{get;private set;}
+
     public BattleState CurrentState { get; private set; }
         = BattleState.PreparingTurn;
 
@@ -68,6 +73,11 @@ public class BattleManager : MonoBehaviour
     /// コマンドUIの再描画に使用できる。
     /// </summary>
     public event Action TurnActionsChanged;
+
+    /// <summary>
+    /// 情報表示対象のユニットが変化した。
+    /// </summary>
+    public event Action<Unit> InspectedUnitChanged;
 
     private void Awake()
     {
@@ -241,6 +251,20 @@ public class BattleManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 情報表示対象のユニットを変更する。
+    /// </summary>
+    private void SetInspectedUnit(Unit unit)
+    {
+        if (InspectedUnit == unit)
+            return;
+
+        InspectedUnit = unit;
+
+        InspectedUnitChanged?.Invoke(
+            InspectedUnit);
+    }
+
+    /// <summary>
     /// 現在のユニットのターンを終了する。
     /// </summary>
     public void CompleteCurrentAction()
@@ -255,8 +279,13 @@ public class BattleManager : MonoBehaviour
 
     public void OnCellClicked(GridCell clickedCell)
     {
+        if (clickedCell == null)
+            return;
+
+        SetInspectedUnit(
+            clickedCell.CurrentUnit);
+
         if (!IsPlayerTurn ||
-            clickedCell == null ||
             CurrentState != BattleState.SelectTarget ||
             _selectedAction == null)
         {

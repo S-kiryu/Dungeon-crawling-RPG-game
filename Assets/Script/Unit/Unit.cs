@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Unit : MonoBehaviour
 {
+    public CharacterData Data{get;private set;}
     public CurrentStatus Status { get; private set; }
     public GridCell CurrentCell { get; private set; }
     public TeamType Team { get; private set; }
@@ -18,6 +19,8 @@ public class Unit : MonoBehaviour
         get;
         private set;
     }
+
+
 
     public bool IsMoving => _isMoving;
 
@@ -75,6 +78,8 @@ public class Unit : MonoBehaviour
 
         CurrentCell = gridCell;
         Team = TeamType.Player;
+
+        Data = character.CharacterData;
 
         RangeData =
             character.CharacterData.RangeData;
