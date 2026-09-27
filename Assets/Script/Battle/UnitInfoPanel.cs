@@ -111,6 +111,10 @@ public class UnitInfoPanel : MonoBehaviour
         RefreshStatus(status);
     }
 
+    /// <summary>
+    /// ユニットの名前を更新する
+    /// </summary>
+    /// <param name="data"></param>
     private void RefreshName(
         CharacterData data)
     {
@@ -130,6 +134,10 @@ public class UnitInfoPanel : MonoBehaviour
             _displayedUnit.name;
     }
 
+    /// <summary>
+    /// ユニットのアイコンを更新する
+    /// </summary>
+    /// <param name="data"></param>
     private void RefreshIcon(
         CharacterData data)
     {
@@ -146,6 +154,9 @@ public class UnitInfoPanel : MonoBehaviour
         _iconImage.preserveAspect = true;
     }
 
+    /// <summary>
+    /// ユニットのチームを更新する
+    /// </summary>
     private void RefreshTeam()
     {
         if (_teamText == null)
@@ -161,6 +172,10 @@ public class UnitInfoPanel : MonoBehaviour
             };
     }
 
+    /// <summary>
+    /// ユニットのHPを更新する
+    /// </summary>
+    /// <param name="status"></param>
     private void RefreshHP(
         CurrentStatus status)
     {
@@ -185,6 +200,10 @@ public class UnitInfoPanel : MonoBehaviour
                 status.MaxHP));
     }
 
+    /// <summary>
+    /// ユニットのステータスを更新する
+    /// </summary>
+    /// <param name="status"></param>
     private void RefreshStatus(
         CurrentStatus status)
     {
