@@ -27,14 +27,41 @@ public class UnitInfoPanel : MonoBehaviour
 
     [Header("HP")]
     [SerializeField]
-    private Slider _hpSlider;
+    private Image _hpFillImage;
 
     [SerializeField]
     private TMP_Text _hpText;
 
+    [SerializeField]
+    private Color _healthyHPColor =
+        new Color(0.2f, 0.8f, 0.2f);
+
+    [SerializeField]
+    private Color _warningHPColor =
+        new Color(1f, 0.7f, 0.1f);
+
+    [SerializeField]
+    private Color _dangerHPColor =
+        new Color(0.9f, 0.15f, 0.15f);
+
     [Header("ステータス")]
     [SerializeField]
-    private TMP_Text _statusText;
+    private TMP_Text _levelText;
+
+    [SerializeField]
+    private TMP_Text _attackText;
+
+    [SerializeField]
+    private TMP_Text _defenseText;
+
+    [SerializeField]
+    private TMP_Text _speedText;
+
+    [SerializeField]
+    private TMP_Text _moveText;
+
+    [SerializeField]
+    private TMP_Text _weightText;
 
     private Unit _displayedUnit;
 
@@ -87,7 +114,7 @@ public class UnitInfoPanel : MonoBehaviour
     }
 
     /// <summary>
-    /// 現在選択されているユニットの情報を再表示する。
+    /// 選択中ユニットの情報を再表示する。
     /// </summary>
     private void Refresh()
     {
@@ -111,10 +138,6 @@ public class UnitInfoPanel : MonoBehaviour
         RefreshStatus(status);
     }
 
-    /// <summary>
-    /// ユニットの名前を更新する
-    /// </summary>
-    /// <param name="data"></param>
     private void RefreshName(
         CharacterData data)
     {
@@ -134,10 +157,6 @@ public class UnitInfoPanel : MonoBehaviour
             _displayedUnit.name;
     }
 
-    /// <summary>
-    /// ユニットのアイコンを更新する
-    /// </summary>
-    /// <param name="data"></param>
     private void RefreshIcon(
         CharacterData data)
     {
@@ -154,9 +173,6 @@ public class UnitInfoPanel : MonoBehaviour
         _iconImage.preserveAspect = true;
     }
 
-    /// <summary>
-    /// ユニットのチームを更新する
-    /// </summary>
     private void RefreshTeam()
     {
         if (_teamText == null)
@@ -172,49 +188,84 @@ public class UnitInfoPanel : MonoBehaviour
             };
     }
 
-    /// <summary>
-    /// ユニットのHPを更新する
-    /// </summary>
-    /// <param name="status"></param>
     private void RefreshHP(
         CurrentStatus status)
     {
-        if (_hpText != null)
-        {
-            _hpText.text =
-                $"HP {status.CurrentHP} / " +
-                $"{status.MaxHP}";
-        }
-
-        if (_hpSlider == null)
-            return;
-
-        _hpSlider.minValue = 0;
-        _hpSlider.maxValue =
+        int maximumHP =
             Mathf.Max(1, status.MaxHP);
 
-        _hpSlider.SetValueWithoutNotify(
+        int currentHP =
             Mathf.Clamp(
                 status.CurrentHP,
                 0,
-                status.MaxHP));
+                maximumHP);
+
+        float hpRate =
+            (float)currentHP /
+            maximumHP;
+
+        if (_hpText != null)
+        {
+            _hpText.text =
+                $"{currentHP} / {maximumHP}";
+        }
+
+        if (_hpFillImage == null)
+            return;
+
+        _hpFillImage.fillAmount =
+            hpRate;
+
+        _hpFillImage.color =
+            GetHPColor(hpRate);
     }
 
-    /// <summary>
-    /// ユニットのステータスを更新する
-    /// </summary>
-    /// <param name="status"></param>
+    private Color GetHPColor(
+        float hpRate)
+    {
+        if (hpRate <= 0.25f)
+            return _dangerHPColor;
+
+        if (hpRate <= 0.5f)
+            return _warningHPColor;
+
+        return _healthyHPColor;
+    }
+
     private void RefreshStatus(
         CurrentStatus status)
     {
-        if (_statusText == null)
-            return;
+        SetText(
+            _levelText,
+            $"Lv. {status.Level}");
 
-        _statusText.text =
-            $"攻撃　{status.Attack}\n" +
-            $"防御　{status.Defense}\n" +
-            $"速度　{status.Speed}\n" +
-            $"移動　{status.MoveLength}";
+        SetText(
+            _attackText,
+            $"攻撃{status.Attack}");
+
+        SetText(
+            _defenseText,
+            $"防御{status.Defense}");
+
+        SetText(
+            _speedText,
+            $"素早さ{status.Speed}");
+
+        SetText(
+            _moveText,
+            $"移動力{status.MoveLength}");
+
+        SetText(
+            _weightText,
+            $"重量{status.Weight}");
+    }
+
+    private void SetText(
+        TMP_Text targetText,
+        string value)
+    {
+        if (targetText != null)
+            targetText.text = value;
     }
 
     private void ShowPanel()

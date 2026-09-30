@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 戦闘状態をUIへ表示する。
+/// BattleManagerの状態を戦闘UIへ表示する。
 /// 入力処理はBattleManagerが担当する。
 /// </summary>
 public class BattleHUD : MonoBehaviour
@@ -19,13 +19,14 @@ public class BattleHUD : MonoBehaviour
     private TMP_Text _currentUnitText;
 
     [SerializeField]
-    private TMP_Text _hpText;
+    private TMP_Text _battleStateText;
+
+    [Header("行動枠")]
+    [SerializeField]
+    private TMP_Text _movementSlotText;
 
     [SerializeField]
-    private TMP_Text _actionSlotText;
-
-    [SerializeField]
-    private TMP_Text _stateText;
+    private TMP_Text _mainActionSlotText;
 
     [Header("コマンドボタン")]
     [SerializeField]
@@ -48,8 +49,8 @@ public class BattleHUD : MonoBehaviour
         if (_battleManager == null)
             return;
 
-        _battleManager.TurnActionsChanged += Refresh;
-        _battleManager.BattleEnded += HandleBattleEnded;
+        _battleManager.TurnActionsChanged +=
+            Refresh;
 
         Refresh();
     }
@@ -59,16 +60,16 @@ public class BattleHUD : MonoBehaviour
         if (_battleManager == null)
             return;
 
-        _battleManager.TurnActionsChanged -= Refresh;
-        _battleManager.BattleEnded -= HandleBattleEnded;
+        _battleManager.TurnActionsChanged -=
+            Refresh;
     }
 
     private void Refresh()
     {
         RefreshTurnInformation();
         RefreshActionSlots();
+        RefreshBattleState();
         RefreshButtons();
-        RefreshStateText();
     }
 
     private void RefreshTurnInformation()
@@ -76,103 +77,74 @@ public class BattleHUD : MonoBehaviour
         if (_roundText != null)
         {
             _roundText.text =
-                $"Round {_battleManager.RoundCount}";
+                $"ラウンド {_battleManager.RoundCount}";
         }
+
+        if (_currentUnitText == null)
+            return;
 
         Unit currentUnit =
             _battleManager.CurrentTurnUnit;
 
         if (currentUnit == null)
         {
-            if (_currentUnitText != null)
-                _currentUnitText.text = "行動中: -";
-
-            if (_hpText != null)
-                _hpText.text = "HP: -";
-
+            _currentUnitText.text =
+                "行動中: -";
             return;
         }
 
-        if (_currentUnitText != null)
-        {
-            _currentUnitText.text =
-                $"行動中: {currentUnit.name}";
-        }
+        string unitName =
+            currentUnit.Data != null &&
+            !string.IsNullOrWhiteSpace(
+                currentUnit.Data.CharacterName)
+                ? currentUnit.Data.CharacterName
+                : currentUnit.name;
 
-        if (_hpText != null &&
-            currentUnit.Status != null)
-        {
-            _hpText.text =
-                $"HP: {currentUnit.Status.CurrentHP}/" +
-                $"{currentUnit.Status.MaxHP}";
-        }
+        _currentUnitText.text =
+            $"行動中: {unitName}";
     }
 
     private void RefreshActionSlots()
     {
-        if (_actionSlotText == null)
-            return;
-
         TurnActionSlots slots =
             _battleManager.CurrentTurnSlots;
 
         if (slots == null)
         {
-            _actionSlotText.text =
-                "移動: - / 主行動: -";
+            SetText(
+                _movementSlotText,
+                "移動: -");
+
+            SetText(
+                _mainActionSlotText,
+                "主行動: -");
+
             return;
         }
 
         int movement =
-            slots.GetRemaining(ActionSlot.Movement);
+            slots.GetRemaining(
+                ActionSlot.Movement);
 
-        int main =
-            slots.GetRemaining(ActionSlot.Main);
+        int mainAction =
+            slots.GetRemaining(
+                ActionSlot.Main);
 
-        _actionSlotText.text =
-            $"移動: {movement} / 主行動: {main}";
+        SetText(
+            _movementSlotText,
+            $"移動: {movement}");
+
+        SetText(
+            _mainActionSlotText,
+            $"主行動: {mainAction}");
     }
 
-    private void RefreshButtons()
+    private void RefreshBattleState()
     {
-        if (_moveButton != null)
-        {
-            _moveButton.interactable =
-                _battleManager.CanMove;
-        }
-
-        if (_attackButton != null)
-        {
-            _attackButton.interactable =
-                _battleManager.CanAttack;
-        }
-
-        if (_skillButton != null)
-        {
-            _skillButton.interactable =
-                _battleManager.CanUseSkill;
-        }
-
-        if (_waitButton != null)
-        {
-            _waitButton.interactable =
-                _battleManager.CanWait;
-        }
-
-        if (_cancelButton != null)
-        {
-            _cancelButton.gameObject.SetActive(
-                _battleManager.CurrentState ==
-                BattleState.SelectTarget);
-        }
-    }
-
-    private void RefreshStateText()
-    {
-        if (_stateText == null)
+        if (_battleStateText == null)
             return;
 
-        _stateText.text =
+        _battleStateText.text =
             _battleManager.CurrentState switch
             {
                 BattleState.PreparingTurn =>
@@ -182,7 +154,7 @@ public class BattleHUD : MonoBehaviour
                     "行動を選択してください",
 
                 BattleState.SelectTarget =>
-                    CreateTargetSelectionMessage(),
+                    GetTargetSelectionText(),
 
                 BattleState.ExecutingAction =>
                     "行動中",
@@ -197,39 +169,57 @@ public class BattleHUD : MonoBehaviour
             };
     }
 
-    private string CreateTargetSelectionMessage()
+    private string GetTargetSelectionText()
     {
         IBattleAction action =
             _battleManager.SelectedAction;
 
-        return action == null
-            ? "対象を選択してください"
-            : $"{action.DisplayName}の対象を選択";
+        if (action == null)
+            return "対象を選択してください";
+
+        return
+            $"{action.DisplayName}の対象を選択";
     }
 
-    private void HandleBattleEnded(bool playerWon)
+    private void RefreshButtons()
     {
-        Refresh();
+        SetButtonInteractable(
+            _moveButton,
+            _battleManager.CanMove);
 
-        SetButtonsInteractable(false);
-    }
+        SetButtonInteractable(
+            _attackButton,
+            _battleManager.CanAttack);
 
-    private void SetButtonsInteractable(
-        bool interactable)
-    {
-        if (_moveButton != null)
-            _moveButton.interactable = interactable;
+        SetButtonInteractable(
+            _skillButton,
+            _battleManager.CanUseSkill);
 
-        if (_attackButton != null)
-            _attackButton.interactable = interactable;
-
-        if (_skillButton != null)
-            _skillButton.interactable = interactable;
-
-        if (_waitButton != null)
-            _waitButton.interactable = interactable;
+        SetButtonInteractable(
+            _waitButton,
+            _battleManager.CanWait);
 
         if (_cancelButton != null)
-            _cancelButton.interactable = interactable;
+        {
+            _cancelButton.gameObject.SetActive(
+                _battleManager.CurrentState ==
+                BattleState.SelectTarget);
+        }
+    }
+
+    private void SetButtonInteractable(
+        Button button,
+        bool interactable)
+    {
+        if (button != null)
+            button.interactable = interactable;
+    }
+
+    private void SetText(
+        TMP_Text target,
+        string value)
+    {
+        if (target != null)
+            target.text = value;
     }
 }
