@@ -584,6 +584,31 @@ public class BattleManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 現在選択中の行動が対象へ与えるダメージを取得する。
+    /// </summary>
+    public bool TryGetSelectedDamagePreview(
+        GridCell targetCell,
+        out DamagePreview preview)
+    {
+        preview = default;
+
+        if (_turnContext == null ||
+            _selectedAction == null ||
+            CurrentState != BattleState.SelectTarget ||
+            _selectedAction is not
+                IDamagePreviewAction previewAction)
+        {
+            return false;
+        }
+
+        return previewAction
+            .TryGetDamagePreview(
+                _turnContext,
+                targetCell,
+                out preview);
+    }
+
+    /// <summary>
     /// スキル一覧でカーソルを合わせたスキルの射程だけを表示する。
     /// </summary>
     public void PreviewSkillRange(

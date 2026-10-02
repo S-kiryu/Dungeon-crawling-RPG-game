@@ -27,12 +27,9 @@ public class DamageSkillEffectData : SkillEffectData
             return;
         }
 
-        int damage = Mathf.Max(
-            0,
-            Mathf.RoundToInt(
-                context.Caster.Status.Attack *
-                _attackMultiplier) +
-            _bonusDamage);
+        int rawDamage =
+            CalculateRawDamage(
+                context.Caster);
 
         foreach (Unit target in
                  context.HitUnits)
@@ -40,7 +37,50 @@ public class DamageSkillEffectData : SkillEffectData
             if (target == null || target.IsDead)
                 continue;
 
-            target.TakeDamage(damage);
+            target.TakeDamage(rawDamage);
         }
+    }
+
+    public override bool TryGetDamagePreview(
+        SkillEffectContext context,
+        Unit target,
+        out int damage)
+    {
+        damage = 0;
+
+        if (context == null ||
+            context.Caster == null ||
+            target == null ||
+            target.IsDead)
+        {
+            return false;
+        }
+
+        int rawDamage =
+            CalculateRawDamage(
+                context.Caster);
+
+        damage =
+            target.CalculateDamageTaken(
+                rawDamage);
+
+        return true;
+    }
+
+    private int CalculateRawDamage(
+        Unit caster)
+    {
+        if (caster == null ||
+            caster.Status == null)
+        {
+            return 0;
+        }
+
+        return Mathf.Max(
+            0,
+            Mathf.RoundToInt(
+                caster.Status.Attack *
+                _attackMultiplier) +
+            _bonusDamage);
     }
 }

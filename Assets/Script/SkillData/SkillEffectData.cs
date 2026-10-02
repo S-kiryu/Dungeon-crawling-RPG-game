@@ -6,4 +6,17 @@ using UnityEngine;
 public abstract class SkillEffectData : ScriptableObject
 {
     public abstract void Apply(SkillEffectContext context);
+
+    /// <summary>
+    /// この効果が対象へ与える実ダメージを取得する。
+    /// ダメージを与えない効果はfalseを返す。
+    /// </summary>
+    public virtual bool TryGetDamagePreview(
+        SkillEffectContext context,
+        Unit target,
+        out int damage)
+    {
+        damage = 0;
+        return false;
+    }
 }
