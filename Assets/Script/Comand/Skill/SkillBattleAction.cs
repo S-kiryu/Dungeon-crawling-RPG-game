@@ -1,23 +1,71 @@
 using System;
+using System.Collections.Generic;
 
+/// <summary>
+/// スキルを使用する戦闘行動。
+/// </summary>
 public sealed class SkillBattleAction : IBattleAction
 {
-    public string Id => BattleActionIds.Skill;
-    public string DisplayName => "スキル";
+    private readonly SkillData _skill;
+
+    public SkillBattleAction(
+        SkillData skill)
+    {
+        _skill = skill;
+    }
+
+    public string Id =>
+        BattleActionIds.Skill;
+
+    public string DisplayName =>
+        _skill != null &&
+        !string.IsNullOrWhiteSpace(
+            _skill.SkillName)
+                ? _skill.SkillName
+                : "スキル";
+
     public BattleActionCategory Category =>
         BattleActionCategory.Skill;
+
     public bool RequiresTarget => true;
 
+    /// <summary>
+    /// スキルを使用できるかどうかを判定
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
     public ActionAvailability GetAvailability(
         BattleTurnContext context)
     {
-        if (context == null || context.Actor == null)
+        if (context == null ||
+            context.Actor == null)
         {
             return ActionAvailability.Unavailable(
                 "行動するユニットがいません。");
         }
 
-        if (!context.Slots.Has(ActionSlot.Main))
+        if (_skill == null)
+        {
+            return ActionAvailability.Unavailable(
+                "スキルが設定されていません。");
+        }
+
+        if (_skill.ActionRangeData == null)
+        {
+            return ActionAvailability.Unavailable(
+                "スキルの射程が設定されていません。");
+        }
+
+        if (_skill.Effects == null ||
+            !_skill.Effects.Exists(
+                effect => effect != null))
+        {
+            return ActionAvailability.Unavailable(
+                "スキル効果が設定されていません。");
+        }
+
+        if (!context.Slots.Has(
+                ActionSlot.Main))
         {
             return ActionAvailability.Unavailable(
                 "主行動枠を使い切っています。");
@@ -29,26 +77,78 @@ public sealed class SkillBattleAction : IBattleAction
     public void BeginTargetSelection(
         BattleTurnContext context)
     {
-        // 選択中のスキルに応じた範囲表示は、
-        // スキル選択機能を接続するときにここへ追加する。
+        context.Grid.ShowSkillRange(
+            context.Actor,
+            _skill);
     }
 
     public BattleActionExecution TryExecute(
         BattleTurnContext context,
-        GridCell target,
+        GridCell targetCell,
         Action onCompleted)
     {
         if (!GetAvailability(context).CanExecute ||
-            target == null)
+            targetCell == null)
         {
             return BattleActionExecution.Rejected;
         }
 
-        // TODO: 選択中のスキル効果を適用する。
-        context.Slots.TryConsume(ActionSlot.Main);
+        if (!context.Grid.IsInRange(
+                context.Actor,
+                targetCell,
+                _skill.ActionRangeData))
+        {
+            return BattleActionExecution.Rejected;
+        }
 
-        // 現在の仕様では主行動後の移動を許可しない。
-        context.Slots.Clear(ActionSlot.Movement);
+        if (!context.Grid.IsValidSkillTarget(
+                context.Actor,
+                targetCell,
+                _skill.TargetType))
+        {
+            return BattleActionExecution.Rejected;
+        }
+
+        Unit mainTarget =
+            targetCell.CurrentUnit;
+
+        List<Unit> hitUnits = new();
+
+        if (mainTarget != null)
+        {
+            hitUnits.Add(mainTarget);
+        }
+
+        SkillEffectContext effectContext =
+            new SkillEffectContext
+            {
+                Caster = context.Actor,
+                MainTarget = mainTarget,
+
+                TargetGrids =
+                    new List<GridCell>
+                    {
+                        targetCell
+                    },
+
+                HitUnits = hitUnits
+            };
+
+        foreach (SkillEffectData effect in
+                 _skill.Effects)
+        {
+            if (effect != null)
+            {
+                effect.Apply(effectContext);
+            }
+        }
+
+        context.Slots.TryConsume(
+            ActionSlot.Main);
+
+        // 現在はスキル使用後の移動を不可にする
+        context.Slots.Clear(
+            ActionSlot.Movement);
 
         return BattleActionExecution.Completed;
     }
