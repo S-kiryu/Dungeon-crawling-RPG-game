@@ -81,14 +81,28 @@ public class BattleManager : MonoBehaviour
 
     private void Awake()
     {
-        _unitManager.UnitsReady += BeginBattle;
+        _unitManager.UnitsReady +=
+            BeginBattle;
+
+        if (_gridManager != null)
+        {
+            _gridManager.HoveredCellChanged +=
+                HandleHoveredCellChanged;
+        }
     }
 
     private void OnDestroy()
     {
         if (_unitManager != null)
         {
-            _unitManager.UnitsReady -= BeginBattle;
+            _unitManager.UnitsReady -=
+                BeginBattle;
+        }
+
+        if (_gridManager != null)
+        {
+            _gridManager.HoveredCellChanged -=
+                HandleHoveredCellChanged;
         }
 
         ReleaseTurnContext();
@@ -115,6 +129,27 @@ public class BattleManager : MonoBehaviour
             $"BattleState changed: {CurrentState}");
 
         TurnActionsChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// クリックして表示したユニットのマスから
+    /// カーソルが外れたら情報表示を解除する。
+    /// </summary>
+    private void HandleHoveredCellChanged(
+        GridCell hoveredCell)
+    {
+        if (InspectedUnit == null)
+            return;
+
+        // まだ表示中ユニットのマスにいる
+        if (hoveredCell != null &&
+            hoveredCell.CurrentUnit ==
+                InspectedUnit)
+        {
+            return;
+        }
+
+        SetInspectedUnit(null);
     }
 
     /// <summary>
@@ -165,8 +200,15 @@ public class BattleManager : MonoBehaviour
         TurnActionSet actions = new();
         actions.Add(new MoveBattleAction());
         actions.Add(new AttackBattleAction());
-        actions.Add(new SkillBattleAction());
         actions.Add(new WaitBattleAction());
+
+
+        if (unit.Skills.Count > 0)
+        {
+            actions.Add(
+                new SkillBattleAction(
+                    unit.Skills[0]));
+        }
 
         _turnContext = new BattleTurnContext(
             unit,
@@ -310,23 +352,10 @@ public class BattleManager : MonoBehaviour
         TrySelectAction(BattleActionIds.Skill);
     }
 
-    public void OnWaitButton()
-    {
-        if (!CanWait)
-            return;
-
-        if (CurrentState == BattleState.SelectTarget)
-        {
-            CancelSelectedAction();
-        }
-
-        TrySelectAction(BattleActionIds.Wait);
-    }
-
     /// <summary>
     /// 対象選択を取り消してコマンド選択へ戻る。
     /// </summary>
-    public void CancelSelectedAction()
+    public void OnCancelSelectedAction()
     {
         if (_turnContext == null ||
             CurrentState != BattleState.SelectTarget)
@@ -340,6 +369,19 @@ public class BattleManager : MonoBehaviour
             _turnContext.Actor);
 
         ChangeState(BattleState.SelectCommand);
+    }
+
+    public void OnWaitButton()
+    {
+        if (!CanWait)
+            return;
+
+        if (CurrentState == BattleState.SelectTarget)
+        {
+            OnCancelSelectedAction();
+        }
+
+        TrySelectAction(BattleActionIds.Wait);
     }
 
     /// <summary>
@@ -427,7 +469,7 @@ public class BattleManager : MonoBehaviour
         if (!GetActionAvailability(
                 _selectedAction.Id).CanExecute)
         {
-            CancelSelectedAction();
+            OnCancelSelectedAction();
             return;
         }
 
@@ -497,11 +539,109 @@ public class BattleManager : MonoBehaviour
             !GetActionAvailability(
                 _selectedAction.Id).CanExecute)
         {
-            CancelSelectedAction();
+            OnCancelSelectedAction();
             return;
         }
 
         TurnActionsChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// スキル一覧UIで選択されたスキルを開始する。
+    /// </summary>
+    public bool TrySelectSkill(
+        SkillData skill)
+    {
+        if (_turnContext == null ||
+            CurrentTurnUnit == null ||
+            CurrentState != BattleState.SelectCommand ||
+            !IsPlayerTurn ||
+            skill == null ||
+            !HasCurrentUnitSkill(skill))
+        {
+            return false;
+        }
+
+        SkillBattleAction skillAction =
+            new SkillBattleAction(skill);
+
+        if (!skillAction
+                .GetAvailability(_turnContext)
+                .CanExecute)
+        {
+            return false;
+        }
+
+        // Idが"skill"の行動を、選択したスキルで置き換える
+        if (!_turnContext.Actions.Add(
+                skillAction))
+        {
+            return false;
+        }
+
+        return TrySelectAction(
+            BattleActionIds.Skill);
+    }
+
+    /// <summary>
+    /// スキル一覧でカーソルを合わせたスキルの射程だけを表示する。
+    /// </summary>
+    public void PreviewSkillRange(
+        SkillData skill)
+    {
+        if (_turnContext == null ||
+            CurrentTurnUnit == null ||
+            CurrentState != BattleState.SelectCommand ||
+            !IsPlayerTurn ||
+            skill == null ||
+            !HasCurrentUnitSkill(skill))
+        {
+            return;
+        }
+
+        _gridManager.ShowSkillRange(
+            CurrentTurnUnit,
+            skill);
+    }
+
+    /// <summary>
+    /// スキル一覧の射程プレビューを解除する。
+    /// </summary>
+    public void ClearSkillRangePreview()
+    {
+        if (_turnContext == null ||
+            CurrentTurnUnit == null ||
+            CurrentState != BattleState.SelectCommand)
+        {
+            return;
+        }
+
+        _gridManager.PreparePlayerAction(
+            CurrentTurnUnit);
+    }
+
+    /// <summary>
+    /// 現在のユニットが指定スキルを所持しているか。
+    /// </summary>
+    private bool HasCurrentUnitSkill(
+        SkillData skill)
+    {
+        if (CurrentTurnUnit == null ||
+            skill == null)
+        {
+            return false;
+        }
+
+        foreach (SkillData ownedSkill in
+                 CurrentTurnUnit.Skills)
+        {
+            if (ownedSkill == skill)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

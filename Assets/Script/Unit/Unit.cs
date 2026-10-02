@@ -9,6 +9,7 @@ public class Unit : MonoBehaviour
     public GridCell CurrentCell { get; private set; }
     public TeamType Team { get; private set; }
     public ActionRangeData RangeData { get; private set; }
+    public IReadOnlyList<SkillData> Skills => _skills;
 
     /// <summary>
     /// プレイヤーの所持キャラから生成された場合に設定される。
@@ -42,6 +43,7 @@ public class Unit : MonoBehaviour
     private bool _isMoving;
     private Renderer[] _renderers;
     private Coroutine _damageFlashCoroutine;
+    private readonly List<SkillData> _skills = new();
 
     private void Awake()
     {
@@ -71,6 +73,9 @@ public class Unit : MonoBehaviour
         }
 
         SourceCharacter = character;
+        Data = character.CharacterData;
+
+        SetSkills(character.Skills);
 
         // 所持キャラのステータスを直接変更しないようにコピーする
         Status = new CurrentStatus(
@@ -78,8 +83,6 @@ public class Unit : MonoBehaviour
 
         CurrentCell = gridCell;
         Team = TeamType.Player;
-
-        Data = character.CharacterData;
 
         RangeData =
             character.CharacterData.RangeData;
@@ -112,6 +115,9 @@ public class Unit : MonoBehaviour
         }
 
         SourceCharacter = null;
+        Data = characterData;
+
+        SetSkills(characterData.Skills);
 
         Status = new CurrentStatus(
             characterData.Status);
@@ -124,6 +130,27 @@ public class Unit : MonoBehaviour
             gridCell.transform.position;
 
         return true;
+    }
+
+    /// <summary>
+    /// スキルを設定する。
+    /// </summary>
+    /// <param name="skills"></param>
+    private void SetSkills(
+    IEnumerable<SkillData> skills)
+    {
+        _skills.Clear();
+
+        if (skills == null)
+            return;
+
+        foreach (SkillData skill in skills)
+        {
+            if (skill != null)
+            {
+                _skills.Add(skill);
+            }
+        }
     }
 
     /// <summary>

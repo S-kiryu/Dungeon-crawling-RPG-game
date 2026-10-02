@@ -17,6 +17,6 @@ MonoBehaviour:
   Description: "\u30C6\u30B9\u30C8\u7528\u306E\u30B9\u30AD\u30EB\u3067\u3059"
   Icon: {fileID: 0}
   ActionRangeData: {fileID: 11400000, guid: 9df55cef1a380314a8994c4fbbb8d9b2, type: 2}
+  TargetType: 0
   Effects:
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: a078e4bcceb0c5b47a8ed9523b789d9b, type: 2}

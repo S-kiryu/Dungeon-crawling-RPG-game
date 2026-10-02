@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Battle/Character Data")]
@@ -16,4 +17,7 @@ public class CharacterData : ScriptableObject
 
     [Header("攻撃の長さ")]
     public ActionRangeData RangeData;
+
+    [Header("初期スキル")]
+    public List<SkillData> Skills = new();
 }

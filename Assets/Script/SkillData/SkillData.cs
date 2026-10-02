@@ -21,6 +21,9 @@ public class SkillData : ScriptableObject
     [Header("対象範囲")]
     public ActionRangeData ActionRangeData;
 
+    public SkillTargetType TargetType =
+        SkillTargetType.Enemy;
+
     [Header("スキル効果")]
     public List<SkillEffectData> Effects = new();
 }
