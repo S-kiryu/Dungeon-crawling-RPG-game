@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 /// <summary>
@@ -18,11 +19,40 @@ public class GridManager : MonoBehaviour
     [SerializeField] private Material _attackRangeMaterial;
     [SerializeField] private Material _attackTargetMaterial;
 
+    [Header("範囲枠の色")]
+    [SerializeField]
+    private Color _selectedOutlineColor =
+        Color.white;
+
+    [SerializeField]
+    private Color _movementOutlineColor =
+        new Color(0.2f, 0.6f, 1f, 1f);
+
+    [SerializeField]
+    private Color _attackRangeOutlineColor =
+        new Color(1f, 0.8f, 0.1f, 1f);
+
+    [SerializeField]
+    private Color _attackTargetOutlineColor =
+        new Color(1f, 0.15f, 0.1f, 1f);
+
+    [SerializeField]
+    private Color _supportTargetOutlineColor =
+        new Color(0.2f, 1f, 0.35f, 1f);
+
+    [SerializeField]
+    private Color _hoverOutlineColor =
+        new Color(0.2f, 1f, 1f, 1f);
+
     private GridCell[,] _grid;
     public GridCell[,] Grid => _grid;
 
     private float _cellSize;
     private Unit _selectedUnit;
+    private GridCell _hoveredCell;
+
+    public event System.Action<GridCell>
+        HoveredCellChanged;
 
     private static readonly Vector2Int[] Directions =
 {
@@ -43,30 +73,97 @@ public class GridManager : MonoBehaviour
         if (Mouse.current == null)
             return;
 
-        if (!Mouse.current.leftButton.wasPressedThisFrame)
-            return;
-
-        //今押したところにレイキャストを飛ばしてグリットを取る
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
-        Ray ray = Camera.main.ScreenPointToRay(mousePosition);
-
-        if (!Physics.Raycast(ray, out RaycastHit hit))
+        if (EventSystem.current != null &&
+            EventSystem.current.IsPointerOverGameObject())
         {
-            Debug.Log("Raycast missed");
+            SetHoveredCell(null);
             return;
         }
 
-        Debug.Log($"Raycast hit: {hit.collider.gameObject.name}, layer={LayerMask.LayerToName(hit.collider.gameObject.layer)}");
+        TryGetCellUnderMouse(
+            out GridCell hoveredCell);
 
-        GridCell cell = hit.collider.GetComponent<GridCell>();
+        SetHoveredCell(hoveredCell);
 
-        if (cell == null)
+        if (Mouse.current.leftButton
+            .wasPressedThisFrame &&
+            hoveredCell != null)
         {
-            Debug.Log("Hit object has no GridCell");
-            return;
+            OnCellClicked(hoveredCell);
+        }
+    }
+
+    private void OnDisable()
+    {
+        SetHoveredCell(null);
+    }
+
+    private bool TryGetCellUnderMouse(
+        out GridCell cell)
+    {
+        cell = null;
+
+        Camera mainCamera = Camera.main;
+
+        if (mainCamera == null ||
+            Mouse.current == null)
+        {
+            return false;
         }
 
-        OnCellClicked(cell);
+        Vector2 mousePosition =
+            Mouse.current.position.ReadValue();
+
+        Ray ray =
+            mainCamera.ScreenPointToRay(
+                mousePosition);
+
+        RaycastHit[] hits =
+            Physics.RaycastAll(ray);
+
+        float closestDistance =
+            float.PositiveInfinity;
+
+        foreach (RaycastHit hit in hits)
+        {
+            GridCell candidate =
+                hit.collider
+                    .GetComponentInParent<GridCell>();
+
+            if (candidate == null ||
+                hit.distance >= closestDistance)
+            {
+                continue;
+            }
+
+            cell = candidate;
+            closestDistance = hit.distance;
+        }
+
+        return cell != null;
+    }
+
+    private void SetHoveredCell(
+        GridCell nextCell)
+    {
+        if (_hoveredCell == nextCell)
+            return;
+
+        if (_hoveredCell != null)
+        {
+            _hoveredCell.HideHover();
+        }
+
+        _hoveredCell = nextCell;
+
+        if (_hoveredCell != null)
+        {
+            _hoveredCell.ShowHover(
+                _hoverOutlineColor);
+        }
+
+        HoveredCellChanged?.Invoke(
+            _hoveredCell);
     }
 
     /// <summary>
@@ -283,17 +380,33 @@ public class GridManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 対象セルがユニットの行動範囲内か判定する
+    /// 通常攻撃の範囲内か判定する。
     /// </summary>
     public bool IsInActionRange(
         Unit unit,
         GridCell targetCell)
     {
+        return IsInRange(
+            unit,
+            targetCell,
+            unit != null
+                ? unit.RangeData
+                : null);
+    }
+
+    /// <summary>
+    /// 指定した範囲データにセルが含まれるか判定する。
+    /// </summary>
+    public bool IsInRange(
+        Unit unit,
+        GridCell targetCell,
+        ActionRangeData rangeData)
+    {
         if (unit == null ||
             unit.CurrentCell == null ||
-            unit.RangeData == null ||
-            unit.RangeData.Offsets == null ||
-            targetCell == null)
+            targetCell == null ||
+            rangeData == null ||
+            rangeData.Offsets == null)
         {
             return false;
         }
@@ -303,10 +416,12 @@ public class GridManager : MonoBehaviour
             unit.CurrentCell.Position;
 
         foreach (Vector2Int offset in
-                 unit.RangeData.Offsets)
+                 rangeData.Offsets)
         {
             if (offset == targetOffset)
+            {
                 return true;
+            }
         }
 
         return false;
@@ -320,7 +435,7 @@ public class GridManager : MonoBehaviour
         if (cell == null)
             return;
 
-        SetDefaultMaterial(cell);
+        cell.HideOutline();
     }
 
     /// <summary>
@@ -353,14 +468,13 @@ public class GridManager : MonoBehaviour
             // 現在地は選択中のマテリアルにする
             if (distance == 0)
             {
-                currentCell.SetMaterial(_selectedMaterial);
+                currentCell.ShowOutline(
+                    _selectedOutlineColor);
             }
             else
             {
-                //仮で攻撃範囲のマテリアルにする
-                currentCell.SetMaterial(
-                    _attackRangeMaterial
-                );
+                currentCell.ShowOutline(
+                    _movementOutlineColor);
             }
 
             if (distance >= unit.Status.MoveLength)
@@ -402,23 +516,152 @@ public class GridManager : MonoBehaviour
     /// <param name="unit"></param>
     public void ShowAttackRange(Unit unit)
     {
-        if (unit == null || unit.RangeData == null)
-            return;
-
-        foreach (Vector2Int offset in unit.RangeData.Offsets)
+        if (unit == null ||
+            unit.CurrentCell == null ||
+            unit.RangeData == null ||
+            unit.RangeData.Offsets == null)
         {
-            Vector2Int position = unit.CurrentCell.Position + offset;
+            return;
+        }
 
-            if (!TryGetCell(position, out GridCell cell))
-                continue;
+        ClearAttackRange();
 
-            cell.SetMaterial(_attackRangeMaterial);
+        unit.CurrentCell.ShowOutline(
+            _selectedOutlineColor);
 
-            // 敵だけを強調したい場合
-            if (cell.IsOccupied && cell.CurrentUnit.Team == TeamType.Enemy)
+        foreach (Vector2Int offset in
+                 unit.RangeData.Offsets)
+        {
+            Vector2Int position =
+                unit.CurrentCell.Position + offset;
+
+            if (!TryGetCell(
+                    position,
+                    out GridCell cell))
             {
-                cell.SetMaterial(_attackTargetMaterial);
+                continue;
             }
+
+            cell.ShowOutline(
+                _attackRangeOutlineColor);
+
+            if (cell.IsOccupied &&
+                cell.CurrentUnit != null &&
+                !cell.CurrentUnit.IsDead &&
+                cell.CurrentUnit.Team != unit.Team &&
+                cell.CurrentUnit.Team !=
+                    TeamType.Neutral)
+            {
+                cell.ShowOutline(
+                    _attackTargetOutlineColor);
+            }
+        }
+    }
+
+    /// <summary>
+    /// スキルの選択範囲を表示する。
+    /// </summary>
+    public void ShowSkillRange(
+        Unit caster,
+        SkillData skill)
+    {
+        if (caster == null ||
+            caster.CurrentCell == null ||
+            skill == null ||
+            skill.ActionRangeData == null ||
+            skill.ActionRangeData.Offsets == null)
+        {
+            return;
+        }
+
+        ClearAttackRange();
+
+        caster.CurrentCell.ShowOutline(
+            _selectedOutlineColor);
+
+        foreach (Vector2Int offset in
+                 skill.ActionRangeData.Offsets)
+        {
+            Vector2Int position =
+                caster.CurrentCell.Position + offset;
+
+            if (!TryGetCell(
+                    position,
+                    out GridCell cell))
+            {
+                continue;
+            }
+
+            cell.ShowOutline(
+                _attackRangeOutlineColor);
+
+            if (!IsValidSkillTarget(
+                    caster,
+                    cell,
+                    skill.TargetType))
+            {
+                continue;
+            }
+
+            Color targetColor =
+                IsSupportSkillTarget(
+                    skill.TargetType)
+                    ? _supportTargetOutlineColor
+                    : _attackTargetOutlineColor;
+
+            cell.ShowOutline(targetColor);
+        }
+    }
+
+    private bool IsSupportSkillTarget(
+        SkillTargetType targetType)
+    {
+        return targetType ==
+                   SkillTargetType.Ally ||
+               targetType ==
+                   SkillTargetType.Self;
+    }
+
+    /// <summary>
+    /// スキルの対象条件を満たすか判定する。
+    /// </summary>
+    public bool IsValidSkillTarget(
+        Unit caster,
+        GridCell targetCell,
+        SkillTargetType targetType)
+    {
+        if (caster == null || targetCell == null)
+            return false;
+
+        Unit target = targetCell.CurrentUnit;
+
+        switch (targetType)
+        {
+            case SkillTargetType.Enemy:
+                return target != null &&
+                       !target.IsDead &&
+                       target.Team != caster.Team &&
+                       target.Team != TeamType.Neutral;
+
+            case SkillTargetType.Ally:
+                return target != null &&
+                       !target.IsDead &&
+                       target != caster &&
+                       target.Team == caster.Team;
+
+            case SkillTargetType.Self:
+                return target == caster &&
+                       !caster.IsDead;
+
+            case SkillTargetType.AnyUnit:
+                return target != null &&
+                       !target.IsDead;
+
+            case SkillTargetType.EmptyCell:
+                return target == null;
+
+            default:
+                return false;
         }
     }
 
@@ -436,11 +679,19 @@ public class GridManager : MonoBehaviour
     /// </summary>
     private void ClearAttackRange()
     {
+        if (_grid == null)
+            return;
+
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                SetDefaultMaterial(_grid[x, y]);
+                GridCell cell = _grid[x, y];
+
+                if (cell != null)
+                {
+                    cell.HideOutline();
+                }
             }
         }
     }
@@ -453,7 +704,13 @@ public class GridManager : MonoBehaviour
     {
         ClearSelection();
         _selectedUnit = unit;
-        _selectedUnit.CurrentCell.SetMaterial(_selectedMaterial);
+
+        if (_selectedUnit != null &&
+            _selectedUnit.CurrentCell != null)
+        {
+            _selectedUnit.CurrentCell.ShowOutline(
+                _selectedOutlineColor);
+        }
     }
 
     public void PreparePlayerAction(Unit unit)
@@ -471,9 +728,8 @@ public class GridManager : MonoBehaviour
 
         if (_selectedUnit.CurrentCell != null)
         {
-            _selectedUnit.CurrentCell.SetMaterial(
-                _selectedMaterial
-            );
+            _selectedUnit.CurrentCell.ShowOutline(
+                _selectedOutlineColor);
         }
     }
 
@@ -486,7 +742,11 @@ public class GridManager : MonoBehaviour
         if (_selectedUnit == null)
             return;
 
-        SetDefaultMaterial(_selectedUnit.CurrentCell);
+        if (_selectedUnit.CurrentCell != null)
+        {
+            _selectedUnit.CurrentCell.HideOutline();
+        }
+
         _selectedUnit = null;
     }
 
