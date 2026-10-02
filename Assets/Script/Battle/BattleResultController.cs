@@ -1,14 +1,30 @@
+using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 戦闘終了時の結果処理を行うコントローラー
+/// 戦闘終了時のUI表示を管理する。
 /// </summary>
-public class BattleResultController :
-    MonoBehaviour
+public class BattleResultController : MonoBehaviour
 {
     [SerializeField]
     private BattleManager _battleManager;
+
+    [Header("戦闘中UI")]
+    [SerializeField]
+    private GameObject _commandView;
+
+    [Header("戦闘結果UI")]
+    [SerializeField]
+    private GameObject _resultView;
+
+    [SerializeField]
+    private TMP_Text _resultText;
+
+    private void Awake()
+    {
+        if (_resultView != null)
+            _resultView.SetActive(false);
+    }
 
     private void OnEnable()
     {
@@ -29,64 +45,24 @@ public class BattleResultController :
     }
 
     /// <summary>
-    /// 戦闘終了時の処理を行う
+    /// 戦闘終了時にコマンドを閉じ、
+    /// 勝敗結果を表示する。
     /// </summary>
-    /// <param name="playerWon"></param>
     private void HandleBattleEnded(
         bool playerWon)
     {
-        DungeonRunSession runSession =
-            DungeonRunSession.Instance;
+        if (_commandView != null)
+            _commandView.SetActive(false);
 
-        FormationManager.Instance
-            ?.PruneInvalidSlots();
+        if (_resultView != null)
+            _resultView.SetActive(true);
 
-        if (runSession == null)
+        if (_resultText != null)
         {
-            SceneManager.LoadScene(
-                "PreparationScene");
-            return;
+            _resultText.text =
+                playerWon
+                    ? "勝利"
+                    : "敗北";
         }
-
-        if (!playerWon)
-        {
-            Debug.Log("探索失敗");
-
-            runSession.EndRun();
-
-            SceneManager.LoadScene(
-                "PreparationScene");
-
-            return;
-        }
-
-        if (!runSession.CompletePendingNode(
-                out MapEventType completedType))
-        {
-            Debug.LogWarning(
-                "攻略中のノードがありません。");
-
-            SceneManager.LoadScene(
-                "PreparationScene");
-
-            return;
-        }
-
-        if (completedType ==
-            MapEventType.Boss)
-        {
-            Debug.Log("階層クリア");
-
-            runSession.EndRun();
-
-            SceneManager.LoadScene(
-                "PreparationScene");
-
-            return;
-        }
-
-        // 通常戦闘勝利
-        SceneManager.LoadScene(
-            "TreeMapScene");
     }
 }
