@@ -279,8 +279,13 @@ public class EnemyTurnController : MonoBehaviour
         }
 
         attacker.PlayAttackAnimation();
-        target.TakeDamage(
-            attacker.Status.Attack
-        );
+
+        foreach (Unit hitTarget in
+                 _gridManager.GetHostileUnitsInActionRange(
+                     attacker))
+        {
+            hitTarget.TakeDamage(
+                attacker.Status.Attack);
+        }
     }
 }

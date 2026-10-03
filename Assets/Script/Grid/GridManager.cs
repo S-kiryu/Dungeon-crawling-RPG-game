@@ -11,6 +11,14 @@ using UnityEngine.Serialization;
 /// </summary>
 public class GridManager : MonoBehaviour
 {
+    private static readonly Vector2Int[] CardinalDirections =
+    {
+        Vector2Int.right,
+        Vector2Int.up,
+        Vector2Int.left,
+        Vector2Int.down
+    };
+
     public GridCell[,] Grid => _grid;
 
     public event Action<GridCell> CellClicked;
@@ -163,14 +171,12 @@ public class GridManager : MonoBehaviour
             return false;
         }
 
-        Vector2Int[] directions =
+        List<Vector2Int> directions = new()
         {
-            unit.FacingDirection,
-            Vector2Int.right,
-            Vector2Int.up,
-            Vector2Int.left,
-            Vector2Int.down
+            unit.FacingDirection
         };
+
+        directions.AddRange(CardinalDirections);
 
         foreach (Vector2Int direction in directions)
         {
@@ -189,6 +195,55 @@ public class GridManager : MonoBehaviour
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 現在向きの通常攻撃範囲内にいる敵対ユニットを取得する。
+    /// </summary>
+    public List<Unit> GetHostileUnitsInActionRange(
+        Unit attacker)
+    {
+        List<Unit> targets = new();
+        HashSet<Unit> addedTargets = new();
+
+        if (attacker == null ||
+            attacker.CurrentCell == null ||
+            attacker.RangeData == null ||
+            attacker.RangeData.Offsets == null)
+        {
+            return targets;
+        }
+
+        foreach (Vector2Int offset in
+                 attacker.RangeData.Offsets)
+        {
+            Vector2Int position =
+                attacker.CurrentCell.Position +
+                GridRangeCalculator.RotateOffset(
+                    offset,
+                    attacker.FacingDirection);
+
+            if (!TryGetCell(position, out GridCell cell) ||
+                !cell.IsOccupied)
+            {
+                continue;
+            }
+
+            Unit target = cell.CurrentUnit;
+
+            if (target == null ||
+                target.IsDead ||
+                target.Team == attacker.Team ||
+                target.Team == TeamType.Neutral ||
+                !addedTargets.Add(target))
+            {
+                continue;
+            }
+
+            targets.Add(target);
+        }
+
+        return targets;
     }
 
     /// <summary>
@@ -268,22 +323,29 @@ public class GridManager : MonoBehaviour
         unit.CurrentCell.ShowOutline(
             _selectedOutlineColor);
 
-        foreach (Vector2Int offset in
-                 unit.RangeData.Offsets)
+        HashSet<GridCell> attackCells = new();
+
+        foreach (Vector2Int facingDirection in
+                 CardinalDirections)
         {
-            Vector2Int position =
-                unit.CurrentCell.Position +
-                GridRangeCalculator.RotateOffset(
-                    offset,
-                    unit.FacingDirection);
-
-            if (!TryGetCell(
-                    position,
-                    out GridCell cell))
+            foreach (Vector2Int offset in
+                     unit.RangeData.Offsets)
             {
-                continue;
-            }
+                Vector2Int position =
+                    unit.CurrentCell.Position +
+                    GridRangeCalculator.RotateOffset(
+                        offset,
+                        facingDirection);
 
+                if (TryGetCell(position, out GridCell cell))
+                {
+                    attackCells.Add(cell);
+                }
+            }
+        }
+
+        foreach (GridCell cell in attackCells)
+        {
             cell.ShowOutline(
                 _attackRangeOutlineColor);
 

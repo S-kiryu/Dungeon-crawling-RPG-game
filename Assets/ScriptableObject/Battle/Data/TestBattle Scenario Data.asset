@@ -16,14 +16,8 @@ MonoBehaviour:
   PlayerUnits:
   - CharacterData: {fileID: 11400000, guid: a84c3c96b2db4fd7b6c9e42d36ac7e11, type: 2}
     GridPosition: {x: 0, y: 1}
-  - CharacterData: {fileID: 11400000, guid: 012c51ce43d6ba34fba56409f24c1cce, type: 2}
-    GridPosition: {x: 0, y: 2}
-  - CharacterData: {fileID: 11400000, guid: 012c51ce43d6ba34fba56409f24c1cce, type: 2}
-    GridPosition: {x: 0, y: 3}
   EnemyUnits:
-  - CharacterData: {fileID: 11400000, guid: fb4e7a8aa2883b348991ab691a0eb836, type: 2}
+  - CharacterData: {fileID: 11400000, guid: 93b79a70bcc2a2e41b3a05bfbd5bf3b8, type: 2}
     GridPosition: {x: 5, y: 1}
-  - CharacterData: {fileID: 11400000, guid: fb4e7a8aa2883b348991ab691a0eb836, type: 2}
-    GridPosition: {x: 5, y: 2}
-  - CharacterData: {fileID: 11400000, guid: fb4e7a8aa2883b348991ab691a0eb836, type: 2}
+  - CharacterData: {fileID: 11400000, guid: 93b79a70bcc2a2e41b3a05bfbd5bf3b8, type: 2}
     GridPosition: {x: 5, y: 3}
