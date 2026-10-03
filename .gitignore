@@ -77,6 +77,11 @@ mono_crash.*
 *.unitypackage.meta
 *.app
 
+# Local .NET tooling output
+**/bin/
+**/obj/
+!Tools/MemberOrder/MemberOrder.csproj
+
 # Crashlytics generated file
 crashlytics-build.properties
 

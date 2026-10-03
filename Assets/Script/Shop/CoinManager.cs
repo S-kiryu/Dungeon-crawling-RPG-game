@@ -7,9 +7,9 @@ public class CoinManager : MonoBehaviour
 {
     public int Coin => coin;
 
-    public void AddCoin(int num) 
+    public void AddCoin(int num)
     {
-        if (num < 0) 
+        if (num < 0)
         {
             Debug.LogWarning("正の数だけを入れてね");
             return;
@@ -17,9 +17,9 @@ public class CoinManager : MonoBehaviour
         coin += num;
     }
 
-    public void RemoveCoin(int num) 
+    public void RemoveCoin(int num)
     {
-        if (num < 0) 
+        if (num < 0)
         {
             Debug.Log("お金が足りないよ");
             return;

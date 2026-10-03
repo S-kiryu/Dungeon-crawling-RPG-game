@@ -6,19 +6,6 @@ using UnityEngine;
 /// </summary>
 public class MapEventManager : MonoBehaviour
 {
-    [SerializeField] private List<EventBase> _events;
-
-    private Dictionary<MapEventType, EventBase> _eventTable;
-
-    private void Awake()
-    {
-        _eventTable = new Dictionary<MapEventType, EventBase>();
-
-        foreach (EventBase mapEvent in _events)
-        {
-            _eventTable[mapEvent.EventType] = mapEvent;
-        }
-    }
 
     /// <summary>
     /// 指定のマップノードのイベントを実行する
@@ -33,5 +20,18 @@ public class MapEventManager : MonoBehaviour
         }
 
         Debug.LogWarning($"{node.EventType} のイベントが未登録です。");
+    }
+    [SerializeField] private List<EventBase> _events;
+
+    private Dictionary<MapEventType, EventBase> _eventTable;
+
+    private void Awake()
+    {
+        _eventTable = new Dictionary<MapEventType, EventBase>();
+
+        foreach (EventBase mapEvent in _events)
+        {
+            _eventTable[mapEvent.EventType] = mapEvent;
+        }
     }
 }

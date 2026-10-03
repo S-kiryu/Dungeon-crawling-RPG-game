@@ -12,20 +12,6 @@ public class ActionRangeDataEditor : Editor
     private const float MinCellSize = 18f;
     private const float MaxCellSize = 30f;
 
-    private SerializedProperty originProperty;
-    private SerializedProperty offsetsProperty;
-    private int gridRadius = 3;
-    private bool showRawOffsets;
-
-    private void OnEnable()
-    {
-        originProperty = serializedObject.FindProperty("origin");
-        offsetsProperty = serializedObject.FindProperty("offsets");
-
-        // アセットを選択したとき、既存のすべての座標が見える大きさにする。
-        gridRadius = Mathf.Clamp(GetRequiredRadius(), MinRadius, MaxRadius);
-    }
-
     /// <summary>
     /// ボタンなどのGUIを描画する
     /// </summary>
@@ -65,6 +51,20 @@ public class ActionRangeDataEditor : Editor
         }
 
         serializedObject.ApplyModifiedProperties();
+    }
+
+    private SerializedProperty originProperty;
+    private SerializedProperty offsetsProperty;
+    private int gridRadius = 3;
+    private bool showRawOffsets;
+
+    private void OnEnable()
+    {
+        originProperty = serializedObject.FindProperty("origin");
+        offsetsProperty = serializedObject.FindProperty("offsets");
+
+        // アセットを選択したとき、既存のすべての座標が見える大きさにする。
+        gridRadius = Mathf.Clamp(GetRequiredRadius(), MinRadius, MaxRadius);
     }
 
     /// <summary>

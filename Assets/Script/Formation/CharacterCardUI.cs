@@ -8,36 +8,6 @@ using UnityEngine.UI;
 /// </summary>
 public class CharacterCardUI : MonoBehaviour
 {
-    [SerializeField]
-    private Button _button;
-
-    [SerializeField]
-    private Image _characterImage;
-
-    [SerializeField]
-    private TMP_Text _nameText;
-
-    [SerializeField]
-    private TMP_Text _rarityText;
-
-    [SerializeField]
-    private TMP_Text _levelText;
-
-    [SerializeField]
-    private GameObject _selectedFrame;
-
-    [SerializeField]
-    private GameObject _formationMark;
-
-    [SerializeField]
-    private CanvasGroup _canvasGroup;
-
-    [SerializeField, Range(0f, 1f)]
-    private float _inFormationAlpha = 0.5f;
-
-    private CharacterInstance _character;
-
-    private bool _isInFormation;
 
     public CharacterInstance Character =>
         _character;
@@ -126,4 +96,34 @@ public class CharacterCardUI : MonoBehaviour
                     : _inFormationAlpha;
         }
     }
+    [SerializeField]
+    private Button _button;
+
+    [SerializeField]
+    private Image _characterImage;
+
+    [SerializeField]
+    private TMP_Text _nameText;
+
+    [SerializeField]
+    private TMP_Text _rarityText;
+
+    [SerializeField]
+    private TMP_Text _levelText;
+
+    [SerializeField]
+    private GameObject _selectedFrame;
+
+    [SerializeField]
+    private GameObject _formationMark;
+
+    [SerializeField]
+    private CanvasGroup _canvasGroup;
+
+    [SerializeField, Range(0f, 1f)]
+    private float _inFormationAlpha = 0.5f;
+
+    private CharacterInstance _character;
+
+    private bool _isInFormation;
 }

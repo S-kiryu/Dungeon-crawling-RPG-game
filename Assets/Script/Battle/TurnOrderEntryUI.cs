@@ -7,26 +7,6 @@ using UnityEngine.UI;
 /// </summary>
 public class TurnOrderEntryUI : MonoBehaviour
 {
-    [SerializeField]
-    private Image _iconImage;
-
-    [SerializeField]
-    private TMP_Text _nameText;
-
-    [SerializeField]
-    private Image _teamBackground;
-
-    [SerializeField]
-    private GameObject _currentTurnFrame;
-
-    [Header("チーム色")]
-    [SerializeField]
-    private Color _playerColor =
-        new Color(0.2f, 0.55f, 1f, 1f);
-
-    [SerializeField]
-    private Color _enemyColor =
-        new Color(1f, 0.25f, 0.2f, 1f);
 
     public void Setup(
         Unit unit,
@@ -78,4 +58,24 @@ public class TurnOrderEntryUI : MonoBehaviour
                 isCurrentTurn);
         }
     }
+    [SerializeField]
+    private Image _iconImage;
+
+    [SerializeField]
+    private TMP_Text _nameText;
+
+    [SerializeField]
+    private Image _teamBackground;
+
+    [SerializeField]
+    private GameObject _currentTurnFrame;
+
+    [Header("チーム色")]
+    [SerializeField]
+    private Color _playerColor =
+        new Color(0.2f, 0.55f, 1f, 1f);
+
+    [SerializeField]
+    private Color _enemyColor =
+        new Color(1f, 0.25f, 0.2f, 1f);
 }

@@ -4,6 +4,24 @@ using UnityEngine;
 
 public class UnitManager : MonoBehaviour
 {
+
+    public IReadOnlyList<Unit> Units => _units;
+
+    public event Action UnitsReady;
+
+    /// <summary>
+    /// 指定したチームの生存しているユニットを取得
+    /// </summary>
+    /// <param name="team"></param>
+    /// <returns></returns>
+    public List<Unit> GetLivingUnits(
+        TeamType team)
+    {
+        return _units.FindAll(unit =>
+            unit != null &&
+            !unit.IsDead &&
+            unit.Team == team);
+    }
     [SerializeField]
     private GridManager _gridManager;
 
@@ -14,10 +32,6 @@ public class UnitManager : MonoBehaviour
     private BattleScenarioData _scenario;
 
     private readonly List<Unit> _units = new();
-
-    public IReadOnlyList<Unit> Units => _units;
-
-    public event Action UnitsReady;
 
     private void Start()
     {
@@ -59,19 +73,5 @@ public class UnitManager : MonoBehaviour
             if (unit != null)
                 _units.Add(unit);
         }
-    }
-
-    /// <summary>
-    /// 指定したチームの生存しているユニットを取得
-    /// </summary>
-    /// <param name="team"></param>
-    /// <returns></returns>
-    public List<Unit> GetLivingUnits(
-        TeamType team)
-    {
-        return _units.FindAll(unit =>
-            unit != null &&
-            !unit.IsDead &&
-            unit.Team == team);
     }
 }

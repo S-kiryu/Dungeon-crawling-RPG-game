@@ -7,14 +7,6 @@ using UnityEngine;
 /// </summary>
 public class EnemyTurnController : MonoBehaviour
 {
-    [SerializeField]
-    private UnitManager _unitManager;
-
-    [SerializeField]
-    private GridManager _gridManager;
-
-    [SerializeField]
-    private float _attackWaitSeconds = 0.5f;
 
     public IEnumerator ExecuteAction(Unit enemy)
     {
@@ -27,6 +19,14 @@ public class EnemyTurnController : MonoBehaviour
 
         yield return ExecuteEnemyAction(enemy);
     }
+    [SerializeField]
+    private UnitManager _unitManager;
+
+    [SerializeField]
+    private GridManager _gridManager;
+
+    [SerializeField]
+    private float _attackWaitSeconds = 0.5f;
 
     private IEnumerator ExecuteEnemyAction(Unit enemy)
     {

@@ -6,8 +6,6 @@ using System.Collections.Generic;
 /// </summary>
 public sealed class TurnActionSlots
 {
-    private readonly Dictionary<ActionSlot, int>
-        _remaining = new();
 
     public event Action Changed;
 
@@ -64,4 +62,6 @@ public sealed class TurnActionSlots
     {
         Set(slot, 0);
     }
+    private readonly Dictionary<ActionSlot, int>
+        _remaining = new();
 }

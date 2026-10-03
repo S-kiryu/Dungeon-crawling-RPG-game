@@ -9,6 +9,31 @@ using UnityEngine.UI;
 public class CharacterSelectionPanel :
     MonoBehaviour
 {
+
+    /// <summary>
+    /// 選択された時の処理
+    /// </summary>
+    /// <param name="slotIndex"></param>
+    public void Open(int slotIndex)
+    {
+        if (_formationManager == null)
+        {
+            _formationManager =
+                FormationManager.Instance;
+        }
+
+        _editingSlotIndex =
+            slotIndex;
+
+        _selectedCharacter =
+            _formationManager
+                .GetCharacterAt(slotIndex);
+
+        gameObject.SetActive(true);
+
+        GenerateCharacterCards();
+        RefreshSelection();
+    }
     [Header("参照")]
     [SerializeField]
     private FormationManager _formationManager;
@@ -59,31 +84,6 @@ public class CharacterSelectionPanel :
             RemoveCharacter);
 
         gameObject.SetActive(false);
-    }
-
-    /// <summary>
-    /// 選択された時の処理
-    /// </summary>
-    /// <param name="slotIndex"></param>
-    public void Open(int slotIndex)
-    {
-        if (_formationManager == null)
-        {
-            _formationManager =
-                FormationManager.Instance;
-        }
-
-        _editingSlotIndex =
-            slotIndex;
-
-        _selectedCharacter =
-            _formationManager
-                .GetCharacterAt(slotIndex);
-
-        gameObject.SetActive(true);
-
-        GenerateCharacterCards();
-        RefreshSelection();
     }
 
     /// <summary>
@@ -247,7 +247,7 @@ public class CharacterSelectionPanel :
         if (assigned)
             Close();
     }
-    
+
     /// <summary>
     /// 選択されたキャラクターを削除する
     /// </summary>

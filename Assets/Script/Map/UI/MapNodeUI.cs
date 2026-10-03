@@ -1,12 +1,51 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// マップ上のノードを描画するUIクラス。
+/// 一つのマップノードを描画するView。
 /// </summary>
 public class MapNodeUI : MonoBehaviour
 {
+    public void Setup(
+        MapNode node,
+        bool isCurrentNode,
+        bool isSelectable,
+        Action<MapNode> onSelected)
+    {
+        _eventText.text = node.EventType.ToString();
+        _button.image.color = isCurrentNode ? Color.black : Color.white;
+        _eventText.color = isCurrentNode ? Color.white : Color.black;
+
+        _button.onClick.RemoveAllListeners();
+        _button.onClick.AddListener(() => onSelected?.Invoke(node));
+
+        SetSelectable(isSelectable);
+    }
+
+    public void SetSelectable(bool canSelect)
+    {
+        if (_button == null)
+            return;
+
+        ColorBlock colors = _button.colors;
+        colors.normalColor = _selectableColor;
+        colors.highlightedColor = _selectableColor;
+        colors.selectedColor = _selectableColor;
+        colors.disabledColor = _unselectableColor;
+
+        _button.colors = colors;
+        _button.interactable = canSelect;
+
+        if (_eventText != null)
+        {
+            _eventText.color = canSelect
+                ? _selectableTextColor
+                : _unselectableTextColor;
+        }
+    }
+
     [SerializeField]
     private TMP_Text _eventText;
 
@@ -25,62 +64,4 @@ public class MapNodeUI : MonoBehaviour
 
     [SerializeField]
     private Color _unselectableTextColor = Color.white;
-
-    /// <summary>
-    /// UIを初期化する。
-    /// </summary>
-    public void Setup(
-        MapNode node,
-        MapManager mapManager)
-    {
-        _eventText.text =
-            node.EventType.ToString();
-
-        bool isCurrentNode =
-            node == mapManager.CurrentNode;
-
-        // 現在地だけ黒くする
-        _button.image.color =
-            isCurrentNode
-                ? Color.black
-                : Color.white;
-
-        _eventText.color =
-            isCurrentNode
-                ? Color.white
-                : Color.black;
-
-        _button.onClick.RemoveAllListeners();
-
-        _button.onClick.AddListener(
-            () => mapManager.SelectNode(node)
-        );
-    }
-
-    /// <summary>
-    /// ノードの選択可否と見た目を変更する。
-    /// </summary>
-    public void SetSelectable(bool canSelect)
-    {
-        if (_button == null)
-            return;
-
-        ColorBlock colors = _button.colors;
-
-        colors.normalColor = _selectableColor;
-        colors.highlightedColor = _selectableColor;
-        colors.selectedColor = _selectableColor;
-        colors.disabledColor = _unselectableColor;
-
-        _button.colors = colors;
-        _button.interactable = canSelect;
-
-        if (_eventText != null)
-        {
-            _eventText.color =
-                canSelect
-                    ? _selectableTextColor
-                    : _unselectableTextColor;
-        }
-    }
 }

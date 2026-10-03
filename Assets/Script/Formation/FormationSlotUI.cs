@@ -5,22 +5,6 @@ using UnityEngine.UI;
 
 public class FormationSlotUI : MonoBehaviour
 {
-    [SerializeField]
-    private Button _button;
-
-    [SerializeField]
-    private Image _characterImage;
-
-    [SerializeField]
-    private TMP_Text _nameText;
-
-    [SerializeField]
-    private TMP_Text _detailText;
-
-    [SerializeField]
-    private GameObject _emptyDisplay;
-
-    private int _slotIndex;
 
     /// <summary>
     /// キャラを指定のインデックスにセットする
@@ -82,6 +66,22 @@ public class FormationSlotUI : MonoBehaviour
                     : string.Empty;
         }
     }
+    [SerializeField]
+    private Button _button;
+
+    [SerializeField]
+    private Image _characterImage;
+
+    [SerializeField]
+    private TMP_Text _nameText;
+
+    [SerializeField]
+    private TMP_Text _detailText;
+
+    [SerializeField]
+    private GameObject _emptyDisplay;
+
+    private int _slotIndex;
 
     /// <summary>
     /// そのキャラの情報

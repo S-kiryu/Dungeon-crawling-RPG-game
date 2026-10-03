@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class ShopManager : MonoBehaviour
 {
@@ -12,21 +12,25 @@ public class ShopManager : MonoBehaviour
     private Transform _itemParent;
 
     [Header("各アイテムの表示数")]
+    [SerializeField]
     private int _gearIndex;
+
+    [SerializeField]
     private int _potionIndex;
 
     [Header("ショップのリロールコスト")]
+    [SerializeField]
     private int _rerollCost;
 
     //生成したアイテムの参照を持っておく場所
-    private List<Item> _items;
+    private readonly List<Item> _items = new();
 
     /// <summary>
     /// ショップアイテムを生成する
     /// </summary>
-    private void GenerateShopItems() 
+    private void GenerateShopItems()
     {
-        for (int i = 0; i < _gearIndex; i++) 
+        for (int i = 0; i < _gearIndex; i++)
         {
             GenerateRandomGear();
         }
@@ -55,9 +59,9 @@ public class ShopManager : MonoBehaviour
     /// <summary>
     /// ショップを初期化する関数
     /// </summary>
-    private void ResetShop() 
+    private void ResetShop()
     {
-        foreach (Item item in _items) 
+        foreach (Item item in _items)
         {
             Destroy(item);
         }

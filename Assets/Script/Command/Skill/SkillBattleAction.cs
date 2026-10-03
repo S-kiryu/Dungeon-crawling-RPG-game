@@ -8,13 +8,6 @@ public sealed class SkillBattleAction :
     IBattleAction,
     IDamagePreviewAction
 {
-    private readonly SkillData _skill;
-
-    public SkillBattleAction(
-        SkillData skill)
-    {
-        _skill = skill;
-    }
 
     public string Id =>
         BattleActionIds.Skill;
@@ -224,4 +217,11 @@ public sealed class SkillBattleAction :
 
         return true;
     }
+
+    public SkillBattleAction(
+        SkillData skill)
+    {
+        _skill = skill;
+    }
+    private readonly SkillData _skill;
 }

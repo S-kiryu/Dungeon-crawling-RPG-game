@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -10,15 +10,91 @@ using System.Reflection;
 [InitializeOnLoad]
 public class ReadmeEditor : Editor
 {
+
+    const float k_Space = 16f;
+
+    public override void OnInspectorGUI()
+    {
+        var readme = (Readme)target;
+        Init();
+
+        foreach (var section in readme.sections)
+        {
+            if (!string.IsNullOrEmpty(section.heading))
+            {
+                GUILayout.Label(section.heading, HeadingStyle);
+            }
+
+            if (!string.IsNullOrEmpty(section.text))
+            {
+                GUILayout.Label(section.text, BodyStyle);
+            }
+
+            if (!string.IsNullOrEmpty(section.linkText))
+            {
+                if (LinkLabel(new GUIContent(section.linkText)))
+                {
+                    Application.OpenURL(section.url);
+                }
+            }
+
+            GUILayout.Space(k_Space);
+        }
+
+        if (GUILayout.Button("Remove Readme Assets", ButtonStyle))
+        {
+            RemoveTutorial();
+        }
+    }
     static string s_ShowedReadmeSessionStateName = "ReadmeEditor.showedReadme";
     
     static string s_ReadmeSourceDirectory = "Assets/TutorialInfo";
 
-    const float k_Space = 16f;
+    bool m_Initialized;
+
+    [SerializeField]
+    GUIStyle m_LinkStyle;
+
+    [SerializeField]
+    GUIStyle m_TitleStyle;
+
+    [SerializeField]
+    GUIStyle m_HeadingStyle;
+
+    [SerializeField]
+    GUIStyle m_BodyStyle;
+
+    [SerializeField]
+    GUIStyle m_ButtonStyle;
 
     static ReadmeEditor()
     {
         EditorApplication.delayCall += SelectReadmeAutomatically;
+    }
+
+    GUIStyle LinkStyle
+    {
+        get { return m_LinkStyle; }
+    }
+
+    GUIStyle TitleStyle
+    {
+        get { return m_TitleStyle; }
+    }
+
+    GUIStyle HeadingStyle
+    {
+        get { return m_HeadingStyle; }
+    }
+
+    GUIStyle BodyStyle
+    {
+        get { return m_BodyStyle; }
+    }
+
+    GUIStyle ButtonStyle
+    {
+        get { return m_ButtonStyle; }
     }
 
     static void RemoveTutorial()
@@ -119,82 +195,6 @@ public class ReadmeEditor : Editor
         }
         GUILayout.EndHorizontal();
     }
-
-    public override void OnInspectorGUI()
-    {
-        var readme = (Readme)target;
-        Init();
-
-        foreach (var section in readme.sections)
-        {
-            if (!string.IsNullOrEmpty(section.heading))
-            {
-                GUILayout.Label(section.heading, HeadingStyle);
-            }
-
-            if (!string.IsNullOrEmpty(section.text))
-            {
-                GUILayout.Label(section.text, BodyStyle);
-            }
-
-            if (!string.IsNullOrEmpty(section.linkText))
-            {
-                if (LinkLabel(new GUIContent(section.linkText)))
-                {
-                    Application.OpenURL(section.url);
-                }
-            }
-
-            GUILayout.Space(k_Space);
-        }
-
-        if (GUILayout.Button("Remove Readme Assets", ButtonStyle))
-        {
-            RemoveTutorial();
-        }
-    }
-
-    bool m_Initialized;
-
-    GUIStyle LinkStyle
-    {
-        get { return m_LinkStyle; }
-    }
-
-    [SerializeField]
-    GUIStyle m_LinkStyle;
-
-    GUIStyle TitleStyle
-    {
-        get { return m_TitleStyle; }
-    }
-
-    [SerializeField]
-    GUIStyle m_TitleStyle;
-
-    GUIStyle HeadingStyle
-    {
-        get { return m_HeadingStyle; }
-    }
-
-    [SerializeField]
-    GUIStyle m_HeadingStyle;
-
-    GUIStyle BodyStyle
-    {
-        get { return m_BodyStyle; }
-    }
-
-    [SerializeField]
-    GUIStyle m_BodyStyle;
-
-    GUIStyle ButtonStyle
-    {
-        get { return m_ButtonStyle; }
-    }
-
-    [SerializeField]
-    GUIStyle m_ButtonStyle;
 
     void Init()
     {
