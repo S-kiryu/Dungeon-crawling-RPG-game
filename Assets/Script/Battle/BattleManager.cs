@@ -24,6 +24,7 @@ public class BattleManager : MonoBehaviour
 
     private BattleTurnContext _turnContext;
     private IBattleAction _selectedAction;
+    private ActiveUnitMarker _activeUnitMarker;
 
     public Unit CurrentTurnUnit { get; private set; }
     public int RoundCount { get; private set; }
@@ -75,12 +76,29 @@ public class BattleManager : MonoBehaviour
     public event Action TurnActionsChanged;
 
     /// <summary>
+    /// 現在の行動者、または今後の行動順が変化した。
+    /// </summary>
+    public event Action TurnOrderChanged;
+
+    /// <summary>
     /// 情報表示対象のユニットが変化した。
     /// </summary>
     public event Action<Unit> InspectedUnitChanged;
 
     private void Awake()
     {
+        _activeUnitMarker =
+            GetComponent<ActiveUnitMarker>();
+
+        if (_activeUnitMarker == null)
+        {
+            _activeUnitMarker =
+                gameObject.AddComponent<
+                    ActiveUnitMarker>();
+        }
+
+        _activeUnitMarker.Initialize(this);
+
         _unitManager.UnitsReady +=
             BeginBattle;
 
@@ -174,6 +192,8 @@ public class BattleManager : MonoBehaviour
         }
         while (CurrentTurnUnit == null ||
                CurrentTurnUnit.IsDead);
+
+        TurnOrderChanged?.Invoke();
 
         if (CurrentTurnUnit.Team == TeamType.Player)
         {
@@ -278,6 +298,8 @@ public class BattleManager : MonoBehaviour
 
         ReleaseTurnContext();
         CurrentTurnUnit = null;
+
+        TurnOrderChanged?.Invoke();
 
         _gridManager.ClearBattleSelection();
         ChangeState(BattleState.BattleFinished);
@@ -528,6 +550,8 @@ public class BattleManager : MonoBehaviour
         if (IsBattleFinished())
             return;
 
+        TurnOrderChanged?.Invoke();
+
         _gridManager.PreparePlayerAction(actingUnit);
         ChangeState(BattleState.SelectCommand);
     }
@@ -711,5 +735,59 @@ public class BattleManager : MonoBehaviour
 
         _turnIndex = -1;
         RoundCount++;
+    }
+
+    /// <summary>
+    /// 現在の行動者を先頭として、今後行動するユニットを取得する。
+    /// 現在ラウンドの末尾へ到達した場合は次ラウンドの先頭から補充する。
+    /// </summary>
+    public List<Unit> GetUpcomingTurnUnits(
+        int maximumCount)
+    {
+        List<Unit> result = new();
+
+        if (maximumCount <= 0 ||
+            _turnOrder.Count == 0 ||
+            _turnIndex < 0)
+        {
+            return result;
+        }
+
+        AddUpcomingUnits(
+            result,
+            _turnIndex,
+            _turnOrder.Count,
+            maximumCount);
+
+        if (result.Count < maximumCount)
+        {
+            AddUpcomingUnits(
+                result,
+                0,
+                _turnOrder.Count,
+                maximumCount);
+        }
+
+        return result;
+    }
+
+    private void AddUpcomingUnits(
+        List<Unit> result,
+        int startIndex,
+        int endIndex,
+        int maximumCount)
+    {
+        for (int index = startIndex;
+             index < endIndex &&
+             result.Count < maximumCount;
+             index++)
+        {
+            Unit unit = _turnOrder[index];
+
+            if (unit == null || unit.IsDead)
+                continue;
+
+            result.Add(unit);
+        }
     }
 }
