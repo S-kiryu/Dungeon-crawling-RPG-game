@@ -140,7 +140,55 @@ public class GridManager : MonoBehaviour
         return _rangeCalculator.IsInRange(
             unit.CurrentCell.Position,
             targetCell.Position,
-            rangeData);
+            rangeData,
+            unit.FacingDirection);
+    }
+
+    /// <summary>
+    /// 対象を通常攻撃できる4方向の向きを取得する。
+    /// 現在向きを最優先する。
+    /// </summary>
+    public bool TryGetActionFacing(
+        Unit unit,
+        GridCell targetCell,
+        out Vector2Int facingDirection)
+    {
+        facingDirection = Vector2Int.zero;
+
+        if (unit == null ||
+            unit.CurrentCell == null ||
+            targetCell == null ||
+            unit.RangeData == null)
+        {
+            return false;
+        }
+
+        Vector2Int[] directions =
+        {
+            unit.FacingDirection,
+            Vector2Int.right,
+            Vector2Int.up,
+            Vector2Int.left,
+            Vector2Int.down
+        };
+
+        foreach (Vector2Int direction in directions)
+        {
+            if (direction == Vector2Int.zero ||
+                !_rangeCalculator.IsInRange(
+                    unit.CurrentCell.Position,
+                    targetCell.Position,
+                    unit.RangeData,
+                    direction))
+            {
+                continue;
+            }
+
+            facingDirection = direction;
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -224,7 +272,10 @@ public class GridManager : MonoBehaviour
                  unit.RangeData.Offsets)
         {
             Vector2Int position =
-                unit.CurrentCell.Position + offset;
+                unit.CurrentCell.Position +
+                GridRangeCalculator.RotateOffset(
+                    offset,
+                    unit.FacingDirection);
 
             if (!TryGetCell(
                     position,
@@ -274,7 +325,10 @@ public class GridManager : MonoBehaviour
                  skill.ActionRangeData.Offsets)
         {
             Vector2Int position =
-                caster.CurrentCell.Position + offset;
+                caster.CurrentCell.Position +
+                GridRangeCalculator.RotateOffset(
+                    offset,
+                    caster.FacingDirection);
 
             if (!TryGetCell(
                     position,
@@ -343,7 +397,9 @@ public class GridManager : MonoBehaviour
         {
             Vector2Int targetPosition =
                 enemy.CurrentCell.Position +
-                offset;
+                GridRangeCalculator.RotateOffset(
+                    offset,
+                    enemy.FacingDirection);
 
             if (!TryGetCell(
                     targetPosition,

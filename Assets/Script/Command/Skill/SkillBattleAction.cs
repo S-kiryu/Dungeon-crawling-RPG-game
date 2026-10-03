@@ -129,6 +129,8 @@ public sealed class SkillBattleAction :
                 HitUnits = hitUnits
             };
 
+        context.Actor.PlayAttackAnimation();
+
         foreach (SkillEffectData effect in
                  _skill.Effects)
         {

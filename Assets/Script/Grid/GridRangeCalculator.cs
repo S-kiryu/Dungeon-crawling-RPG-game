@@ -8,7 +8,8 @@ public sealed class GridRangeCalculator
     public bool IsInRange(
         Vector2Int origin,
         Vector2Int target,
-        ActionRangeData rangeData)
+        ActionRangeData rangeData,
+        Vector2Int facingDirection)
     {
         if (rangeData == null || rangeData.Offsets == null)
             return false;
@@ -17,11 +18,47 @@ public sealed class GridRangeCalculator
 
         foreach (Vector2Int offset in rangeData.Offsets)
         {
-            if (offset == targetOffset)
+            if (RotateOffset(
+                    offset,
+                    facingDirection) == targetOffset)
+            {
                 return true;
+            }
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// +X向きを基準に作られた範囲オフセットを、
+    /// ユニットの現在方向へ回転する。
+    /// </summary>
+    public static Vector2Int RotateOffset(
+        Vector2Int offset,
+        Vector2Int facingDirection)
+    {
+        if (facingDirection == Vector2Int.up)
+        {
+            return new Vector2Int(
+                -offset.y,
+                offset.x);
+        }
+
+        if (facingDirection == Vector2Int.left)
+        {
+            return new Vector2Int(
+                -offset.x,
+                -offset.y);
+        }
+
+        if (facingDirection == Vector2Int.down)
+        {
+            return new Vector2Int(
+                offset.y,
+                -offset.x);
+        }
+
+        return offset;
     }
 
     public bool IsValidTarget(

@@ -7,6 +7,13 @@ using UnityEngine;
 /// </summary>
 public class EnemyTurnController : MonoBehaviour
 {
+    private static readonly Vector2Int[] FacingDirections =
+    {
+        Vector2Int.right,
+        Vector2Int.up,
+        Vector2Int.left,
+        Vector2Int.down
+    };
 
     public IEnumerator ExecuteAction(Unit enemy)
     {
@@ -155,18 +162,10 @@ public class EnemyTurnController : MonoBehaviour
             return false;
         }
 
-        Vector2Int targetOffset =
-            target.CurrentCell.Position -
-            attacker.CurrentCell.Position;
-
-        foreach (Vector2Int attackOffset
-                 in attacker.RangeData.Offsets)
-        {
-            if (attackOffset == targetOffset)
-                return true;
-        }
-
-        return false;
+        return _gridManager.TryGetActionFacing(
+            attacker,
+            target.CurrentCell,
+            out _);
     }
 
     /// <summary>
@@ -199,41 +198,49 @@ public class EnemyTurnController : MonoBehaviour
                 continue;
             }
 
-            foreach (Vector2Int attackOffset
-                     in enemy.RangeData.Offsets)
+            foreach (Vector2Int facingDirection
+                     in FacingDirections)
             {
-                Vector2Int attackPosition =
-                    player.CurrentCell.Position -
-                    attackOffset;
-
-                if (!_gridManager.TryGetCell(
-                        attackPosition,
-                        out GridCell attackCell))
+                foreach (Vector2Int attackOffset
+                         in enemy.RangeData.Offsets)
                 {
-                    continue;
-                }
+                    Vector2Int orientedOffset =
+                        GridRangeCalculator.RotateOffset(
+                            attackOffset,
+                            facingDirection);
+                    Vector2Int attackPosition =
+                        player.CurrentCell.Position -
+                        orientedOffset;
 
-                // 自分以外のユニットがいるマスは使えない
-                if (attackCell.IsOccupied &&
-                    attackCell.CurrentUnit != enemy)
-                {
-                    continue;
-                }
+                    if (!_gridManager.TryGetCell(
+                            attackPosition,
+                            out GridCell attackCell))
+                    {
+                        continue;
+                    }
 
-                if (!_gridManager.TryFindPath(
-                        enemy.CurrentCell,
-                        attackCell,
-                        enemy,
-                        out List<GridCell> path))
-                {
-                    continue;
-                }
+                    // 自分以外のユニットがいるマスは使えない
+                    if (attackCell.IsOccupied &&
+                        attackCell.CurrentUnit != enemy)
+                    {
+                        continue;
+                    }
 
-                // 最短経路を選ぶ
-                if (bestPath == null ||
-                    path.Count < bestPath.Count)
-                {
-                    bestPath = path;
+                    if (!_gridManager.TryFindPath(
+                            enemy.CurrentCell,
+                            attackCell,
+                            enemy,
+                            out List<GridCell> path))
+                    {
+                        continue;
+                    }
+
+                    // 最短経路を選ぶ
+                    if (bestPath == null ||
+                        path.Count < bestPath.Count)
+                    {
+                        bestPath = path;
+                    }
                 }
             }
         }
@@ -263,6 +270,15 @@ public class EnemyTurnController : MonoBehaviour
             $"{target.name} を攻撃"
         );
 
+        if (_gridManager.TryGetActionFacing(
+                attacker,
+                target.CurrentCell,
+                out Vector2Int facingDirection))
+        {
+            attacker.SetFacing(facingDirection);
+        }
+
+        attacker.PlayAttackAnimation();
         target.TakeDamage(
             attacker.Status.Attack
         );

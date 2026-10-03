@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BattleScenarioData
   ScenarioName: test
   PlayerUnits:
-  - CharacterData: {fileID: 11400000, guid: 012c51ce43d6ba34fba56409f24c1cce, type: 2}
+  - CharacterData: {fileID: 11400000, guid: a84c3c96b2db4fd7b6c9e42d36ac7e11, type: 2}
     GridPosition: {x: 0, y: 1}
   - CharacterData: {fileID: 11400000, guid: 012c51ce43d6ba34fba56409f24c1cce, type: 2}
     GridPosition: {x: 0, y: 2}

@@ -65,6 +65,7 @@ public sealed class AttackBattleAction :
         // 現在の仕様では主行動後の移動を許可しない。
         context.Slots.Clear(ActionSlot.Movement);
 
+        context.Actor.PlayAttackAnimation();
         target.TakeDamage(context.Actor.Status.Attack);
 
         return BattleActionExecution.Completed;
