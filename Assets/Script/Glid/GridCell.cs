@@ -15,6 +15,8 @@ public class GridCell : MonoBehaviour
 
     private bool _hasOutline;
     private Color _outlineColor;
+    private bool _hasThreatOutline;
+    private Color _threatOutlineColor;
     private bool _isHovered;
     private Color _hoverColor;
 
@@ -100,6 +102,27 @@ public class GridCell : MonoBehaviour
     }
 
     /// <summary>
+    /// 敵の危険範囲を通常の行動範囲より低い優先度で表示する。
+    /// </summary>
+    public void ShowThreatOutline(Color color)
+    {
+        _threatOutlineColor = color;
+        _hasThreatOutline = true;
+
+        RefreshOutline();
+    }
+
+    /// <summary>
+    /// 敵の危険範囲表示を解除する。
+    /// </summary>
+    public void HideThreatOutline()
+    {
+        _hasThreatOutline = false;
+
+        RefreshOutline();
+    }
+
+    /// <summary>
     /// カーソルが乗っている間だけ専用色で枠を表示する。
     /// </summary>
     public void ShowHover(Color color)
@@ -138,6 +161,15 @@ public class GridCell : MonoBehaviour
         {
             ApplyOutlineColor(
                 _outlineColor);
+
+            _outlineRenderer.enabled = true;
+            return;
+        }
+
+        if (_hasThreatOutline)
+        {
+            ApplyOutlineColor(
+                _threatOutlineColor);
 
             _outlineRenderer.enabled = true;
             return;

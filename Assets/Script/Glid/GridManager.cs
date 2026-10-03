@@ -44,6 +44,15 @@ public class GridManager : MonoBehaviour
     private Color _hoverOutlineColor =
         new Color(0.2f, 1f, 1f, 1f);
 
+    [Header("敵危険範囲")]
+    [SerializeField]
+    private Color _enemyThreatOutlineColor =
+        new Color(1f, 0.15f, 0.1f, 0.65f);
+
+    [SerializeField]
+    private Color _enemyMovementOutlineColor =
+        new Color(0.65f, 0.25f, 1f, 0.75f);
+
     private GridCell[,] _grid;
     public GridCell[,] Grid => _grid;
 
@@ -444,38 +453,58 @@ public class GridManager : MonoBehaviour
     /// <param name="unit"></param>
     public void ShowMovementRange(Unit unit)
     {
+        // 前に表示していた攻撃範囲などを消す
+        ClearAttackRange();
+
+        HashSet<GridCell> reachableCells =
+            GetReachableCells(unit);
+
+        foreach (GridCell cell in
+                 reachableCells)
+        {
+            if (cell == unit.CurrentCell)
+            {
+                cell.ShowOutline(
+                    _selectedOutlineColor);
+            }
+            else
+            {
+                cell.ShowOutline(
+                    _movementOutlineColor);
+            }
+        }
+    }
+
+    /// <summary>
+    /// ユニットが現在の移動力で到達できるセルを取得する。
+    /// 現在地も結果へ含む。
+    /// </summary>
+    public HashSet<GridCell> GetReachableCells(
+        Unit unit)
+    {
+        HashSet<GridCell> reachableCells =
+            new();
+
         if (unit == null ||
             unit.CurrentCell == null ||
             unit.Status == null)
         {
-            return;
+            return reachableCells;
         }
 
-        // 前に表示していた攻撃範囲などを消す
-        ClearAttackRange();
+        Queue<(GridCell cell, int distance)>
+            queue = new();
 
-        Queue<(GridCell cell, int distance)> queue = new();
-        HashSet<GridCell> visited = new();
+        queue.Enqueue(
+            (unit.CurrentCell, 0));
 
-        queue.Enqueue((unit.CurrentCell, 0));
-        visited.Add(unit.CurrentCell);
+        reachableCells.Add(
+            unit.CurrentCell);
 
         while (queue.Count > 0)
         {
             (GridCell currentCell, int distance) =
                 queue.Dequeue();
-
-            // 現在地は選択中のマテリアルにする
-            if (distance == 0)
-            {
-                currentCell.ShowOutline(
-                    _selectedOutlineColor);
-            }
-            else
-            {
-                currentCell.ShowOutline(
-                    _movementOutlineColor);
-            }
 
             if (distance >= unit.Status.MoveLength)
                 continue;
@@ -492,8 +521,11 @@ public class GridManager : MonoBehaviour
                     continue;
                 }
 
-                if (visited.Contains(nextCell))
+                if (reachableCells.Contains(
+                        nextCell))
+                {
                     continue;
+                }
 
                 if (nextCell.Terrain == TerrainType.Wall)
                     continue;
@@ -502,12 +534,15 @@ public class GridManager : MonoBehaviour
                 if (nextCell.IsOccupied)
                     continue;
 
-                visited.Add(nextCell);
+                reachableCells.Add(nextCell);
+
                 queue.Enqueue(
                     (nextCell, distance + 1)
                 );
             }
         }
+
+        return reachableCells;
     }
 
     /// <summary>
@@ -662,6 +697,101 @@ public class GridManager : MonoBehaviour
 
             default:
                 return false;
+        }
+    }
+
+    /// <summary>
+    /// 敵が現在地から通常攻撃できる範囲を表示する。
+    /// 移動後の攻撃範囲は含めない。
+    /// </summary>
+    public void ShowEnemyThreatRange(
+        Unit enemy)
+    {
+        ClearEnemyThreatRange();
+
+        if (enemy == null ||
+            enemy.IsDead ||
+            enemy.Team != TeamType.Enemy ||
+            enemy.CurrentCell == null ||
+            enemy.RangeData == null ||
+            enemy.RangeData.Offsets == null)
+        {
+            return;
+        }
+
+        foreach (Vector2Int offset in
+                 enemy.RangeData.Offsets)
+        {
+            Vector2Int targetPosition =
+                enemy.CurrentCell.Position +
+                offset;
+
+            if (!TryGetCell(
+                    targetPosition,
+                    out GridCell targetCell))
+            {
+                continue;
+            }
+
+            if (targetCell.Terrain ==
+                TerrainType.Wall)
+            {
+                continue;
+            }
+
+            targetCell.ShowThreatOutline(
+                _enemyThreatOutlineColor);
+        }
+    }
+
+    /// <summary>
+    /// 敵が現在地から移動できる範囲だけを表示する。
+    /// 攻撃範囲および移動後攻撃範囲は含めない。
+    /// </summary>
+    public void ShowEnemyMovementRange(
+        Unit enemy)
+    {
+        ClearEnemyThreatRange();
+
+        if (enemy == null ||
+            enemy.IsDead ||
+            enemy.Team != TeamType.Enemy)
+        {
+            return;
+        }
+
+        HashSet<GridCell> reachableCells =
+            GetReachableCells(enemy);
+
+        foreach (GridCell cell in
+                 reachableCells)
+        {
+            if (cell == enemy.CurrentCell)
+                continue;
+
+            cell.ShowThreatOutline(
+                _enemyMovementOutlineColor);
+        }
+    }
+
+    /// <summary>
+    /// 敵の危険範囲表示だけを解除する。
+    /// プレイヤーの行動範囲表示には影響しない。
+    /// </summary>
+    public void ClearEnemyThreatRange()
+    {
+        if (_grid == null)
+            return;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                GridCell cell = _grid[x, y];
+
+                if (cell != null)
+                    cell.HideThreatOutline();
+            }
         }
     }
 

@@ -3,7 +3,9 @@ using System;
 /// <summary>
 /// 攻撃アクションを表すクラス
 /// </summary>
-public sealed class AttackBattleAction : IBattleAction
+public sealed class AttackBattleAction :
+    IBattleAction,
+    IDamagePreviewAction
 {
     public string Id => BattleActionIds.Attack;
     public string DisplayName => "攻撃";
@@ -66,5 +68,44 @@ public sealed class AttackBattleAction : IBattleAction
         target.TakeDamage(context.Actor.Status.Attack);
 
         return BattleActionExecution.Completed;
+    }
+
+    public bool TryGetDamagePreview(
+        BattleTurnContext context,
+        GridCell targetCell,
+        out DamagePreview preview)
+    {
+        preview = default;
+
+        if (context == null ||
+            context.Actor == null ||
+            context.Actor.Status == null ||
+            targetCell == null ||
+            !targetCell.IsOccupied)
+        {
+            return false;
+        }
+
+        Unit target = targetCell.CurrentUnit;
+
+        if (target == null ||
+            target.IsDead ||
+            target.Team != TeamType.Enemy ||
+            !context.Grid.IsInActionRange(
+                context.Actor,
+                targetCell))
+        {
+            return false;
+        }
+
+        int damage =
+            target.CalculateDamageTaken(
+                context.Actor.Status.Attack);
+
+        preview = new DamagePreview(
+            target,
+            damage);
+
+        return true;
     }
 }

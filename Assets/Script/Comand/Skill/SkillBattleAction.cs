@@ -4,7 +4,9 @@ using System.Collections.Generic;
 /// <summary>
 /// スキルを使用する戦闘行動。
 /// </summary>
-public sealed class SkillBattleAction : IBattleAction
+public sealed class SkillBattleAction :
+    IBattleAction,
+    IDamagePreviewAction
 {
     private readonly SkillData _skill;
 
@@ -151,5 +153,75 @@ public sealed class SkillBattleAction : IBattleAction
             ActionSlot.Movement);
 
         return BattleActionExecution.Completed;
+    }
+
+    public bool TryGetDamagePreview(
+        BattleTurnContext context,
+        GridCell targetCell,
+        out DamagePreview preview)
+    {
+        preview = default;
+
+        if (!GetAvailability(context).CanExecute ||
+            targetCell == null ||
+            !context.Grid.IsInRange(
+                context.Actor,
+                targetCell,
+                _skill.ActionRangeData) ||
+            !context.Grid.IsValidSkillTarget(
+                context.Actor,
+                targetCell,
+                _skill.TargetType))
+        {
+            return false;
+        }
+
+        Unit target = targetCell.CurrentUnit;
+
+        if (target == null || target.IsDead)
+            return false;
+
+        SkillEffectContext effectContext =
+            new SkillEffectContext
+            {
+                Caster = context.Actor,
+                MainTarget = target,
+                TargetGrids =
+                    new List<GridCell>
+                    {
+                        targetCell
+                    },
+                HitUnits =
+                    new List<Unit>
+                    {
+                        target
+                    }
+            };
+
+        int totalDamage = 0;
+        bool hasDamageEffect = false;
+
+        foreach (SkillEffectData effect in
+                 _skill.Effects)
+        {
+            if (effect != null &&
+                effect.TryGetDamagePreview(
+                    effectContext,
+                    target,
+                    out int damage))
+            {
+                totalDamage += damage;
+                hasDamageEffect = true;
+            }
+        }
+
+        if (!hasDamageEffect)
+            return false;
+
+        preview = new DamagePreview(
+            target,
+            totalDamage);
+
+        return true;
     }
 }

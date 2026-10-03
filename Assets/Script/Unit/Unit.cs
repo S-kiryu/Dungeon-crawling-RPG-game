@@ -4,6 +4,13 @@ using UnityEngine;
 
 public class Unit : MonoBehaviour
 {
+    /// <summary>
+    /// いずれかのユニットが実際にダメージを受けたときに通知する。
+    /// 第2引数は防御力を反映した実ダメージ。
+    /// </summary>
+    public static event System.Action<Unit, int>
+        AnyUnitDamaged;
+
     public CharacterData Data{get;private set;}
     public CurrentStatus Status { get; private set; }
     public GridCell CurrentCell { get; private set; }
@@ -179,25 +186,24 @@ public class Unit : MonoBehaviour
     /// <summary>
     /// ダメージを受ける。
     /// </summary>
-    public void TakeDamage(int damage)
+    public void TakeDamage(int rawDamage)
     {
         if (Status == null || IsDead)
             return;
 
         int actualDamage =
-            Mathf.Max(
-                0,
-                damage - Status.Defense);
+            CalculateDamageTaken(rawDamage);
 
-        Status.CurrentHP -= actualDamage;
-
-        Status.CurrentHP =
-            Mathf.Max(
-                0,
-                Status.CurrentHP);
+        Status.CurrentHP = Mathf.Max(
+            0,
+            Status.CurrentHP - actualDamage);
 
         // 所持キャラの場合はHPと死亡を反映する
         ReflectStatusToSourceCharacter();
+
+        AnyUnitDamaged?.Invoke(
+            this,
+            actualDamage);
 
         bool died =
             Status.CurrentHP <= 0;
@@ -211,6 +217,21 @@ public class Unit : MonoBehaviour
         _damageFlashCoroutine =
             StartCoroutine(
                 DamageFlashRoutine(died));
+    }
+
+    /// <summary>
+    /// 防御力を反映した実際のダメージを計算する。
+    /// 予測表示と実ダメージの両方から使用する。
+    /// </summary>
+    public int CalculateDamageTaken(
+        int rawDamage)
+    {
+        if (Status == null || IsDead)
+            return 0;
+
+        return Mathf.Max(
+            0,
+            rawDamage - Status.Defense);
     }
 
     /// <summary>

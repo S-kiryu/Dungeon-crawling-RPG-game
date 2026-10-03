@@ -17,5 +17,5 @@ MonoBehaviour:
   Attack: 10
   Deffens: 0
   Speed: 1
-  MoveLength: 5
+  MoveLength: 2
   Weight: 0
