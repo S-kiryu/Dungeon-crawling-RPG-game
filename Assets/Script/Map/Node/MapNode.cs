@@ -7,6 +7,13 @@ using System.Collections.Generic;
 public class MapNode
 {
     public MapEventType EventType;
+
+    [Tooltip("このノードだけに使う本体画像。未設定ならMapNodeUIの種別設定を使います。")]
+    public Sprite NodeSprite;
+
+    [Tooltip("このノードだけに使うイベントアイコン。未設定ならMapNodeUIの種別設定を使います。")]
+    public Sprite EventIcon;
+
     public List<MapNode> NextNodes { get; } = new();
 
     /// <summary>

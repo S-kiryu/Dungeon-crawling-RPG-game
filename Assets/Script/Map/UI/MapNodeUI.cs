@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,12 +9,28 @@ using UnityEngine.UI;
 /// </summary>
 public class MapNodeUI : MonoBehaviour
 {
+    [Serializable]
+    private sealed class EventVisual
+    {
+        public MapEventType EventType = MapEventType.Start;
+
+        [Tooltip("ノード本体（背景・枠）の画像。未設定ならPrefabの画像を維持します。")]
+        public Sprite NodeSprite = null;
+
+        [Tooltip("ノード中央に表示するイベントアイコン。")]
+        public Sprite EventIcon = null;
+    }
+
     public void Setup(
         MapNode node,
         bool isCurrentNode,
         bool isSelectable,
         Action<MapNode> onSelected)
     {
+        if (node == null)
+            throw new ArgumentNullException(nameof(node));
+
+        ApplyVisual(node);
         _eventText.text = node.EventType.ToString();
         _button.image.color = isCurrentNode ? Color.black : Color.white;
         _eventText.color = isCurrentNode ? Color.white : Color.black;
@@ -22,6 +39,55 @@ public class MapNodeUI : MonoBehaviour
         _button.onClick.AddListener(() => onSelected?.Invoke(node));
 
         SetSelectable(isSelectable);
+    }
+
+    private void Awake()
+    {
+        if (_nodeImage == null && _button != null)
+            _nodeImage = _button.image;
+
+        if (_nodeImage != null)
+            _prefabNodeSprite = _nodeImage.sprite;
+    }
+
+    private void ApplyVisual(MapNode node)
+    {
+        EventVisual visual = GetVisual(node.EventType);
+
+        Sprite nodeSprite = node.NodeSprite != null
+            ? node.NodeSprite
+            : visual?.NodeSprite;
+
+        if (_nodeImage != null)
+            _nodeImage.sprite = nodeSprite != null
+                ? nodeSprite
+                : _prefabNodeSprite;
+
+        Sprite eventIcon = node.EventIcon != null
+            ? node.EventIcon
+            : visual?.EventIcon;
+
+        if (_eventIconImage != null)
+        {
+            _eventIconImage.sprite = eventIcon;
+            _eventIconImage.enabled = eventIcon != null;
+        }
+
+        if (_eventText != null)
+        {
+            bool hasIcon = eventIcon != null && _eventIconImage != null;
+        }
+    }
+
+    private EventVisual GetVisual(MapEventType eventType)
+    {
+        foreach (EventVisual visual in _eventVisuals)
+        {
+            if (visual != null && visual.EventType == eventType)
+                return visual;
+        }
+
+        return null;
     }
 
     public void SetSelectable(bool canSelect)
@@ -52,6 +118,24 @@ public class MapNodeUI : MonoBehaviour
     [SerializeField]
     private Button _button;
 
+    [Header("ノード表示")]
+
+    [Tooltip("ノード本体（背景・枠）を表示するImage。未設定ならButtonのImageを使います。")]
+    [SerializeField]
+    private Image _nodeImage;
+
+    [Tooltip("イベントアイコンを表示するImage。")]
+    [SerializeField]
+    private Image _eventIconImage;
+
+    [Tooltip("アイコンがある場合もイベント名を表示します。")]
+    [SerializeField]
+    private bool _showEventNameWithIcon;
+
+    [Tooltip("Start、Bossなど、イベント種別ごとの本体画像とアイコン設定。")]
+    [SerializeField]
+    private List<EventVisual> _eventVisuals = new();
+
     [Header("ノードの色")]
     
     
@@ -70,4 +154,6 @@ public class MapNodeUI : MonoBehaviour
     [Tooltip("選択不可能なノードのテキスト色")]
     [SerializeField]
     private Color _unselectableTextColor = Color.white;
+
+    private Sprite _prefabNodeSprite;
 }
