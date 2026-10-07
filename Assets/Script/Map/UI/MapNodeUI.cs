@@ -53,15 +53,21 @@ public class MapNodeUI : MonoBehaviour
     private Button _button;
 
     [Header("ノードの色")]
+    
+    
+    [Tooltip("選択可能なノードの色")]
     [SerializeField]
     private Color _selectableColor = Color.white;
 
+    [Tooltip("選択不可能なノードの色")]
     [SerializeField]
     private Color _unselectableColor = Color.black;
 
+    [Tooltip("選択可能なノードのテキスト色")]
     [SerializeField]
     private Color _selectableTextColor = Color.black;
 
+    [Tooltip("選択不可能なノードのテキスト色")]
     [SerializeField]
     private Color _unselectableTextColor = Color.white;
 }
