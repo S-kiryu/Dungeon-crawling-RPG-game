@@ -1,23 +1,52 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// プレイヤーが所持するキャラクター個体をシーン間で保持する。
+/// CharacterRosterModelをシーン間で保持するComposition Root。
 /// </summary>
 [DefaultExecutionOrder(-1000)]
 public class CharacterRoster : MonoBehaviour
 {
-    public static CharacterRoster Instance
+    public static CharacterRoster Instance { get; private set; }
+
+    public CharacterRosterModel Model => _model;
+    public IReadOnlyList<CharacterInstance> OwnedCharacters =>
+        _model?.Characters ?? _ownedCharacters;
+
+    public event Action Changed
     {
-        get;
-        private set;
+        add
+        {
+            if (_model != null)
+                _model.Changed += value;
+        }
+        remove
+        {
+            if (_model != null)
+                _model.Changed -= value;
+        }
+    }
+
+    public bool Add(CharacterInstance character)
+    {
+        return _model != null && _model.Add(character);
+    }
+
+    public CharacterInstance FindById(string instanceId)
+    {
+        return _model?.FindById(instanceId);
+    }
+
+    public List<CharacterInstance> GetDeployableCharacters()
+    {
+        return _model?.GetDeployableCharacters() ?? new List<CharacterInstance>();
     }
 
     [SerializeField]
     private List<CharacterInstance> _ownedCharacters = new();
 
-    public IReadOnlyList<CharacterInstance> OwnedCharacters =>
-        _ownedCharacters;
+    private CharacterRosterModel _model;
 
     private void Awake()
     {
@@ -28,32 +57,7 @@ public class CharacterRoster : MonoBehaviour
         }
 
         Instance = this;
+        _model = new CharacterRosterModel(_ownedCharacters);
         DontDestroyOnLoad(gameObject);
-    }
-
-    public bool Add(CharacterInstance character)
-    {
-        if (character == null)
-            return false;
-
-        _ownedCharacters.Add(character);
-        return true;
-    }
-
-    public CharacterInstance FindById(string instanceId)
-    {
-        if (string.IsNullOrEmpty(instanceId))
-            return null;
-
-        return _ownedCharacters.Find(character =>
-            character != null &&
-            character.InstanceId == instanceId);
-    }
-
-    public List<CharacterInstance> GetDeployableCharacters()
-    {
-        return _ownedCharacters.FindAll(character =>
-            character != null &&
-            character.CanDeploy);
     }
 }

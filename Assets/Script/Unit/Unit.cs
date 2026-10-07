@@ -1,62 +1,46 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// 戦闘ユニットのUnity View。
+/// 既存コード向けの公開APIは内部のUnitModelへ委譲する。
+/// </summary>
 public class Unit : MonoBehaviour
 {
+    private static readonly int IsMovingParameter =
+        Animator.StringToHash("IsMoving");
+    private static readonly int AttackParameter =
+        Animator.StringToHash("Attack");
+    private static readonly int HitParameter =
+        Animator.StringToHash("Hit");
+    private static readonly int DieParameter =
+        Animator.StringToHash("Die");
+
+    private static readonly IReadOnlyList<SkillData> EmptySkills =
+        Array.Empty<SkillData>();
+
+    public UnitModel Model => _model;
+    public CharacterData Data => _model?.Data;
+    public CurrentStatus Status => _model?.Status;
+    public GridCell CurrentCell { get; private set; }
+    public TeamType Team => _model?.Team ?? TeamType.Neutral;
+    public ActionRangeData RangeData => _model?.RangeData;
+    public IReadOnlyList<SkillData> Skills =>
+        _model?.Skills ?? EmptySkills;
+    public CharacterInstance SourceCharacter =>
+        _model?.SourceCharacter;
+    public Vector2Int FacingDirection { get; private set; }
+        = Vector2Int.right;
+    public bool IsMoving => _isMoving;
+    public bool IsDead => _model != null && _model.IsDead;
+
     /// <summary>
     /// いずれかのユニットが実際にダメージを受けたときに通知する。
     /// 第2引数は防御力を反映した実ダメージ。
     /// </summary>
-    public static event System.Action<Unit, int>
-        AnyUnitDamaged;
-
-    public CharacterData Data{get;private set;}
-    public CurrentStatus Status { get; private set; }
-    public GridCell CurrentCell { get; private set; }
-    public TeamType Team { get; private set; }
-    public ActionRangeData RangeData { get; private set; }
-    public IReadOnlyList<SkillData> Skills => _skills;
-
-    /// <summary>
-    /// プレイヤーの所持キャラから生成された場合に設定される。
-    /// 敵やテスト用ユニットの場合はnull。
-    /// </summary>
-    public CharacterInstance SourceCharacter
-    {
-        get;
-        private set;
-    }
-
-
-
-    public bool IsMoving => _isMoving;
-
-    public bool IsDead =>
-        Status != null &&
-        Status.CurrentHP <= 0;
-
-    [Header("ダメージ演出")]
-    [SerializeField]
-    private Color _damageColor = Color.red;
-
-    [SerializeField]
-    private float _damageFlashSeconds = 0.2f;
-
-    [Header("移動")]
-    [SerializeField]
-    private float _moveAnimationSpeed = 5f;
-
-    private bool _isMoving;
-    private Renderer[] _renderers;
-    private Coroutine _damageFlashCoroutine;
-    private readonly List<SkillData> _skills = new();
-
-    private void Awake()
-    {
-        _renderers =
-            GetComponentsInChildren<Renderer>();
-    }
+    public static event Action<Unit, int> AnyUnitDamaged;
 
     /// <summary>
     /// 所持キャラ個体からプレイヤーユニットを初期化する。
@@ -73,31 +57,15 @@ public class Unit : MonoBehaviour
             return false;
         }
 
-        if (gridCell == null ||
-            !gridCell.TrySetUnit(this))
-        {
-            return false;
-        }
-
-        SourceCharacter = character;
-        Data = character.CharacterData;
-
-        SetSkills(character.Skills);
-
-        // 所持キャラのステータスを直接変更しないようにコピーする
-        Status = new CurrentStatus(
-            character.Status);
-
-        CurrentCell = gridCell;
-        Team = TeamType.Player;
-
-        RangeData =
-            character.CharacterData.RangeData;
-
-        transform.position =
-            gridCell.transform.position;
-
-        return true;
+        return InitializeModel(
+            new UnitModel(
+                character.CharacterData,
+                new CurrentStatus(character.Status),
+                TeamType.Player,
+                character.CharacterData.RangeData,
+                character.Skills,
+                character),
+            gridCell);
     }
 
     /// <summary>
@@ -115,49 +83,14 @@ public class Unit : MonoBehaviour
             return false;
         }
 
-        if (gridCell == null ||
-            !gridCell.TrySetUnit(this))
-        {
-            return false;
-        }
-
-        SourceCharacter = null;
-        Data = characterData;
-
-        SetSkills(characterData.Skills);
-
-        Status = new CurrentStatus(
-            characterData.Status);
-
-        CurrentCell = gridCell;
-        Team = team;
-        RangeData = actionRange;
-
-        transform.position =
-            gridCell.transform.position;
-
-        return true;
-    }
-
-    /// <summary>
-    /// スキルを設定する。
-    /// </summary>
-    /// <param name="skills"></param>
-    private void SetSkills(
-    IEnumerable<SkillData> skills)
-    {
-        _skills.Clear();
-
-        if (skills == null)
-            return;
-
-        foreach (SkillData skill in skills)
-        {
-            if (skill != null)
-            {
-                _skills.Add(skill);
-            }
-        }
+        return InitializeModel(
+            new UnitModel(
+                characterData,
+                new CurrentStatus(characterData.Status),
+                team,
+                actionRange,
+                characterData.Skills),
+            gridCell);
     }
 
     /// <summary>
@@ -165,7 +98,7 @@ public class Unit : MonoBehaviour
     /// </summary>
     public void MoveAlongPath(
         IReadOnlyList<GridCell> path,
-        System.Action onComplete)
+        Action onComplete)
     {
         if (_isMoving ||
             path == null ||
@@ -174,13 +107,8 @@ public class Unit : MonoBehaviour
             return;
         }
 
-        // 最終目的地を現在セルとして登録する
         CurrentCell = path[path.Count - 1];
-
-        StartCoroutine(
-            MovePathRoutine(
-                path,
-                onComplete));
+        StartCoroutine(MovePathRoutine(path, onComplete));
     }
 
     /// <summary>
@@ -188,68 +116,180 @@ public class Unit : MonoBehaviour
     /// </summary>
     public void TakeDamage(int rawDamage)
     {
-        if (Status == null || IsDead)
+        if (_model == null || _model.IsDead)
             return;
 
-        int actualDamage =
-            CalculateDamageTaken(rawDamage);
+        int actualDamage = _model.TakeDamage(rawDamage);
+        AnyUnitDamaged?.Invoke(this, actualDamage);
 
-        Status.CurrentHP = Mathf.Max(
-            0,
-            Status.CurrentHP - actualDamage);
-
-        // 所持キャラの場合はHPと死亡を反映する
-        ReflectStatusToSourceCharacter();
-
-        AnyUnitDamaged?.Invoke(
-            this,
-            actualDamage);
-
-        bool died =
-            Status.CurrentHP <= 0;
+        if (_animator != null)
+        {
+            _animator.SetTrigger(
+                _model.IsDead
+                    ? DieParameter
+                    : HitParameter);
+        }
 
         if (_damageFlashCoroutine != null)
         {
-            StopCoroutine(
-                _damageFlashCoroutine);
+            StopCoroutine(_damageFlashCoroutine);
         }
 
-        _damageFlashCoroutine =
-            StartCoroutine(
-                DamageFlashRoutine(died));
+        _damageFlashCoroutine = StartCoroutine(
+            DamageFlashRoutine(_model.IsDead));
+    }
+
+    /// <summary>
+    /// 通常攻撃・近接スキルの攻撃モーションを再生する。
+    /// </summary>
+    public void PlayAttackAnimation()
+    {
+        if (_animator == null || IsDead)
+            return;
+
+        _animator.SetTrigger(AttackParameter);
+    }
+
+    /// <summary>
+    /// グリッド上の4方向へユニットを向ける。
+    /// </summary>
+    public void SetFacing(Vector2Int direction)
+    {
+        if (direction == Vector2Int.zero)
+            return;
+
+        if (Mathf.Abs(direction.x) >=
+            Mathf.Abs(direction.y))
+        {
+            FacingDirection = direction.x >= 0
+                ? Vector2Int.right
+                : Vector2Int.left;
+        }
+        else
+        {
+            FacingDirection = direction.y >= 0
+                ? Vector2Int.up
+                : Vector2Int.down;
+        }
+
+        Vector3 worldDirection = new Vector3(
+            FacingDirection.x,
+            0f,
+            FacingDirection.y);
+
+        transform.rotation = Quaternion.LookRotation(
+            worldDirection,
+            Vector3.up);
     }
 
     /// <summary>
     /// 防御力を反映した実際のダメージを計算する。
-    /// 予測表示と実ダメージの両方から使用する。
     /// </summary>
-    public int CalculateDamageTaken(
-        int rawDamage)
+    public int CalculateDamageTaken(int rawDamage)
     {
-        if (Status == null || IsDead)
-            return 0;
-
-        return Mathf.Max(
-            0,
-            rawDamage - Status.Defense);
+        return _model?.CalculateDamageTaken(rawDamage) ?? 0;
     }
 
-    /// <summary>
-    /// 戦闘中の状態を所持キャラへ反映する。
-    /// </summary>
-    private void ReflectStatusToSourceCharacter()
+    [Header("ダメージ演出")]
+    [SerializeField]
+    private Color _damageColor = Color.red;
+
+    [SerializeField]
+    private float _damageFlashSeconds = 0.2f;
+
+    [SerializeField]
+    private float _deathAnimationSeconds = 1.5f;
+
+    [Header("移動")]
+    [SerializeField]
+    private float _moveAnimationSpeed = 5f;
+
+    private UnitModel _model;
+    private bool _isMoving;
+    private Renderer[] _renderers;
+    private Renderer[] _placeholderRenderers;
+    private GameObject _visualInstance;
+    private Animator _animator;
+    private Coroutine _damageFlashCoroutine;
+
+    private void Awake()
     {
-        if (SourceCharacter == null)
+        _placeholderRenderers = GetComponents<Renderer>();
+        _renderers = GetComponentsInChildren<Renderer>();
+    }
+
+    private bool InitializeModel(
+        UnitModel model,
+        GridCell gridCell)
+    {
+        if (model == null ||
+            gridCell == null ||
+            !gridCell.TrySetUnit(this))
+        {
+            return false;
+        }
+
+        _model = model;
+        CurrentCell = gridCell;
+        transform.position = gridCell.transform.position;
+        CreateCharacterVisual(model.Data);
+        SetFacing(
+            model.Team == TeamType.Enemy
+                ? Vector2Int.left
+                : Vector2Int.right);
+
+        return true;
+    }
+
+    private void CreateCharacterVisual(CharacterData characterData)
+    {
+        if (characterData == null || characterData.VisualPrefab == null)
             return;
 
-        SourceCharacter.ApplyBattleResult(
-            Status);
+        if (_visualInstance != null)
+        {
+            Destroy(_visualInstance);
+        }
+
+        _visualInstance = Instantiate(
+            characterData.VisualPrefab,
+            transform);
+
+        Transform visualTransform = _visualInstance.transform;
+        visualTransform.localPosition =
+            characterData.VisualLocalPosition;
+        visualTransform.localRotation = Quaternion.Euler(
+            characterData.VisualLocalEulerAngles);
+        visualTransform.localScale =
+            characterData.VisualLocalScale;
+
+        foreach (Renderer placeholderRenderer in _placeholderRenderers)
+        {
+            if (placeholderRenderer != null)
+            {
+                placeholderRenderer.enabled = false;
+            }
+        }
+
+        _renderers =
+            _visualInstance.GetComponentsInChildren<Renderer>();
+
+        _animator =
+            _visualInstance.GetComponentInChildren<Animator>();
+
+        if (_animator != null)
+        {
+            _animator.applyRootMotion = false;
+
+            if (characterData.AnimatorController != null)
+            {
+                _animator.runtimeAnimatorController =
+                    characterData.AnimatorController;
+            }
+        }
     }
 
-    /// <summary>
-    /// ユニットを死亡状態にする。
-    /// </summary>
-    private void Dead()
+    private void RemoveFromBoard()
     {
         if (CurrentCell != null)
         {
@@ -260,110 +300,107 @@ public class Unit : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    /// <summary>
-    /// ダメージを受けたときの点滅演出。
-    /// </summary>
-    private IEnumerator DamageFlashRoutine(
-        bool dieAfterFlash)
+    private IEnumerator DamageFlashRoutine(bool removeAfterFlash)
     {
         MaterialPropertyBlock[] originalBlocks =
-            new MaterialPropertyBlock[
-                _renderers.Length];
+            new MaterialPropertyBlock[_renderers.Length];
 
-        for (int index = 0;
-             index < _renderers.Length;
-             index++)
+        for (int index = 0; index < _renderers.Length; index++)
         {
-            Renderer targetRenderer =
-                _renderers[index];
-
+            Renderer targetRenderer = _renderers[index];
             MaterialPropertyBlock originalBlock =
                 new MaterialPropertyBlock();
 
-            targetRenderer.GetPropertyBlock(
-                originalBlock);
-
-            originalBlocks[index] =
-                originalBlock;
+            targetRenderer.GetPropertyBlock(originalBlock);
+            originalBlocks[index] = originalBlock;
 
             MaterialPropertyBlock damageBlock =
                 new MaterialPropertyBlock();
 
-            targetRenderer.GetPropertyBlock(
-                damageBlock);
-
-            // URP Lit用
-            damageBlock.SetColor(
-                "_BaseColor",
-                _damageColor);
-
-            // Standard Shader用
-            damageBlock.SetColor(
-                "_Color",
-                _damageColor);
-
-            targetRenderer.SetPropertyBlock(
-                damageBlock);
+            targetRenderer.GetPropertyBlock(damageBlock);
+            damageBlock.SetColor("_BaseColor", _damageColor);
+            damageBlock.SetColor("_Color", _damageColor);
+            targetRenderer.SetPropertyBlock(damageBlock);
         }
 
-        yield return new WaitForSeconds(
-            _damageFlashSeconds);
+        yield return new WaitForSeconds(_damageFlashSeconds);
 
-        for (int index = 0;
-             index < _renderers.Length;
-             index++)
+        for (int index = 0; index < _renderers.Length; index++)
         {
-            if (_renderers[index] == null)
-                continue;
-
-            _renderers[index].SetPropertyBlock(
-                originalBlocks[index]);
+            if (_renderers[index] != null)
+            {
+                _renderers[index].SetPropertyBlock(originalBlocks[index]);
+            }
         }
 
         _damageFlashCoroutine = null;
 
-        if (dieAfterFlash)
+        if (removeAfterFlash)
         {
-            Dead();
+            float remainingDeathSeconds = Mathf.Max(
+                0f,
+                _deathAnimationSeconds -
+                _damageFlashSeconds);
+
+            if (remainingDeathSeconds > 0f)
+            {
+                yield return new WaitForSeconds(
+                    remainingDeathSeconds);
+            }
+
+            RemoveFromBoard();
         }
     }
 
-    /// <summary>
-    /// 経路に沿って移動するコルーチン。
-    /// </summary>
     private IEnumerator MovePathRoutine(
         IReadOnlyList<GridCell> path,
-        System.Action onComplete)
+        Action onComplete)
     {
         _isMoving = true;
+        SetMovingAnimation(true);
 
-        // path[0]は現在地なので1から開始する
-        for (int index = 1;
-             index < path.Count;
-             index++)
+        for (int index = 1; index < path.Count; index++)
         {
             Vector3 destinationPosition =
                 path[index].transform.position;
+
+            Vector3 moveDirection =
+                destinationPosition - transform.position;
+
+            if (moveDirection.sqrMagnitude > 0.0001f)
+            {
+                SetFacing(new Vector2Int(
+                    Mathf.RoundToInt(moveDirection.x),
+                    Mathf.RoundToInt(moveDirection.z)));
+            }
 
             while (Vector3.Distance(
                        transform.position,
                        destinationPosition) > 0.01f)
             {
-                transform.position =
-                    Vector3.MoveTowards(
-                        transform.position,
-                        destinationPosition,
-                        _moveAnimationSpeed *
-                        Time.deltaTime);
+                transform.position = Vector3.MoveTowards(
+                    transform.position,
+                    destinationPosition,
+                    _moveAnimationSpeed * Time.deltaTime);
 
                 yield return null;
             }
 
-            transform.position =
-                destinationPosition;
+            transform.position = destinationPosition;
         }
 
         _isMoving = false;
+        SetMovingAnimation(false);
         onComplete?.Invoke();
+    }
+
+    private void SetMovingAnimation(bool isMoving)
+    {
+        if (_animator != null)
+        {
+            _animator.SetBool(
+                IsMovingParameter,
+                isMoving);
+        }
     }
 }

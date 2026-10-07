@@ -9,12 +9,6 @@ using UnityEngine;
     fileName = "NewDamageSkillEffect")]
 public class DamageSkillEffectData : SkillEffectData
 {
-    [SerializeField]
-    [Min(0f)]
-    private float _attackMultiplier = 1f;
-
-    [SerializeField]
-    private int _bonusDamage;
 
     public override void Apply(
         SkillEffectContext context)
@@ -66,6 +60,12 @@ public class DamageSkillEffectData : SkillEffectData
 
         return true;
     }
+    [SerializeField]
+    [Min(0f)]
+    private float _attackMultiplier = 1f;
+
+    [SerializeField]
+    private int _bonusDamage;
 
     private int CalculateRawDamage(
         Unit caster)

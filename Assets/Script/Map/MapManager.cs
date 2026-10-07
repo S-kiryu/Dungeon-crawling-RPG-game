@@ -2,10 +2,25 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// マップの管理を行うクラス
+/// MapPresenterを構築するComposition Root兼、既存シーン向けFacade。
 /// </summary>
 public class MapManager : MonoBehaviour
 {
+    public IReadOnlyList<List<MapNode>> Columns => _presenter?.Columns;
+    public MapNode CurrentNode => _presenter?.CurrentNode;
+    public IReadOnlyList<MapNode> SelectableNodes =>
+        _presenter?.SelectableNodes;
+
+    public void SelectNode(MapNode selectedNode)
+    {
+        _presenter?.SelectNode(selectedNode);
+    }
+
+    public bool CanSelectNode(MapNode node)
+    {
+        return _presenter != null && _presenter.CanSelectNode(node);
+    }
+
     [SerializeField]
     private MapUI _mapUI;
 
@@ -21,82 +36,32 @@ public class MapManager : MonoBehaviour
     [SerializeField]
     private int _mapMaximumWidth = 3;
 
-    private DungeonRunSession _runSession;
-
-    public IReadOnlyList<List<MapNode>> Columns =>
-        _runSession.Columns;
-
-    public MapNode CurrentNode =>
-        _runSession.CurrentNode;
-
-    public IReadOnlyList<MapNode> SelectableNodes =>
-        _runSession.CurrentNode.NextNodes;
+    private MapPresenter _presenter;
 
     private void Start()
     {
-        _runSession =
-            DungeonRunSession.Instance;
+        DungeonRunSession session = DungeonRunSession.Instance;
 
-        if (_runSession == null)
+        if (session?.Model == null)
         {
-            Debug.LogError(
-                "DungeonRunSessionが存在しません。");
+            Debug.LogError("DungeonRunSessionが存在しません。", this);
             return;
         }
 
-        // 初回入場時だけマップを生成する
-        if (!_runSession.HasActiveRun)
+        if (_mapUI == null || _mapEventManager == null)
         {
-            _runSession.StartNewRun(
-                _mapLength,
-                _mapMinimumWidth,
-                _mapMaximumWidth);
-        }
-
-        _mapUI.ShowMap(
-            Columns,
-            this);
-    }
-
-    /// <summary>
-    /// マップ上のノードを選択する
-    /// </summary>
-    /// <param name="selectedNode"></param>
-    public void SelectNode(
-        MapNode selectedNode)
-    {
-        if (!_runSession.BeginNode(
-                selectedNode))
-        {
+            Debug.LogError("MapのViewまたはEventManagerが未設定です。", this);
             return;
         }
 
-        bool waitsForBattleResult =
-            selectedNode.EventType ==
-                MapEventType.Battle ||
-            selectedNode.EventType ==
-                MapEventType.Boss;
+        _presenter = new MapPresenter(
+            session.Model,
+            _mapUI,
+            _mapEventManager.Execute);
 
-        _mapEventManager.Execute(
-            selectedNode);
-
-        // ショップと休憩は仮で即クリア扱い
-        if (!waitsForBattleResult)
-        {
-            _runSession.CompletePendingNode(
-                out _);
-        }
-    }
-
-    /// <summary>
-    /// 選択可能なノードかどうかを判定する
-    /// </summary>
-    /// <param name="node"></param>
-    /// <returns></returns>
-    public bool CanSelectNode(MapNode node)
-    {
-        return
-            _runSession != null &&
-            _runSession.CanSelect(node);
+        _presenter.Initialize(
+            _mapLength,
+            _mapMinimumWidth,
+            _mapMaximumWidth);
     }
 }

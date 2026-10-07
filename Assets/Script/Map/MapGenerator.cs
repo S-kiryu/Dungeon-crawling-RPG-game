@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 public class MapGenerator
 {
+
     /// <summary>
     /// マップ生成の関数
     /// </summary>
@@ -20,7 +20,9 @@ public class MapGenerator
         {
             List<MapNode> column = new();
 
-            int width = Random.Range(mapMinimumWidth, mapMaximumWidth + 1);
+            int width = _randomSource.Range(
+                mapMinimumWidth,
+                mapMaximumWidth + 1);
 
             // 最初と最後は1マス固定
             if (i == 0 || i == mapLength - 1)
@@ -46,6 +48,12 @@ public class MapGenerator
         }
         return columns;
     }
+    public MapGenerator(IRandomSource randomSource = null)
+    {
+        _randomSource = randomSource ?? new UnityRandomSource();
+    }
+
+    private readonly IRandomSource _randomSource;
 
     /// <summary>
     /// ランダムにマップのタイプを渡す
@@ -53,7 +61,7 @@ public class MapGenerator
     /// <returns></returns>
     private MapEventType GetRandomEvent()
     {
-        int random = Random.Range(0, 100);
+        int random = _randomSource.Range(0, 100);
 
         if (random < 50)
             return MapEventType.Battle;

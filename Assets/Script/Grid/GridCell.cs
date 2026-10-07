@@ -5,20 +5,6 @@ using UnityEngine;
 /// </summary>
 public class GridCell : MonoBehaviour
 {
-    [SerializeField] private MeshRenderer _renderer;
-
-    [SerializeField]
-    private MeshRenderer _outlineRenderer;
-
-    private MaterialPropertyBlock
-        _outlinePropertyBlock;
-
-    private bool _hasOutline;
-    private Color _outlineColor;
-    private bool _hasThreatOutline;
-    private Color _threatOutlineColor;
-    private bool _isHovered;
-    private Color _hoverColor;
 
     private static readonly int
         OutlineColorId =
@@ -32,14 +18,6 @@ public class GridCell : MonoBehaviour
     public TerrainType Terrain { get; private set; }
 
     public bool IsOccupied => CurrentUnit != null;
-
-    private void Awake()
-    {
-        _outlinePropertyBlock =
-            new MaterialPropertyBlock();
-
-        HideOutline();
-    }
 
     public void Initialize(Vector2Int position)
     {
@@ -141,6 +119,28 @@ public class GridCell : MonoBehaviour
         _isHovered = false;
 
         RefreshOutline();
+    }
+    [SerializeField] private MeshRenderer _renderer;
+
+    [SerializeField]
+    private MeshRenderer _outlineRenderer;
+
+    private MaterialPropertyBlock
+        _outlinePropertyBlock;
+
+    private bool _hasOutline;
+    private Color _outlineColor;
+    private bool _hasThreatOutline;
+    private Color _threatOutlineColor;
+    private bool _isHovered;
+    private Color _hoverColor;
+
+    private void Awake()
+    {
+        _outlinePropertyBlock =
+            new MaterialPropertyBlock();
+
+        HideOutline();
     }
 
     private void RefreshOutline()

@@ -2,141 +2,68 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// ダンジョンランのセッションを管理するクラス
+/// DungeonRunModelをシーン間で保持するComposition Root。
 /// </summary>
 [DefaultExecutionOrder(-800)]
 public class DungeonRunSession : MonoBehaviour
 {
-    public static DungeonRunSession Instance
+    public static DungeonRunSession Instance { get; private set; }
+
+    public DungeonRunModel Model => _model;
+    public IReadOnlyList<List<MapNode>> Columns => _model?.Columns;
+    public MapNode CurrentNode => _model?.CurrentNode;
+    public MapNode PendingNode => _model?.PendingNode;
+    public bool HasActiveRun => _model != null && _model.HasActiveRun;
+
+    public void StartNewRun(
+        int mapLength,
+        int minimumWidth,
+        int maximumWidth)
     {
-        get;
-        private set;
+        _model.StartNewRun(mapLength, minimumWidth, maximumWidth);
     }
 
-    private List<List<MapNode>> _columns;
-    private MapNode _currentNode;
-    private MapNode _pendingNode;
+    public bool CanSelect(MapNode node)
+    {
+        return _model != null && _model.CanSelect(node);
+    }
 
-    public IReadOnlyList<List<MapNode>> Columns =>
-        _columns;
+    public bool BeginNode(MapNode node)
+    {
+        return _model != null && _model.BeginNode(node);
+    }
 
-    public MapNode CurrentNode =>
-        _currentNode;
+    public bool CompletePendingNode(out MapEventType completedType)
+    {
+        if (_model != null)
+            return _model.CompletePendingNode(out completedType);
 
-    public MapNode PendingNode =>
-        _pendingNode;
+        completedType = MapEventType.Start;
+        return false;
+    }
 
-    public bool HasActiveRun =>
-        _columns != null &&
-        _columns.Count > 0 &&
-        _currentNode != null;
+    public void CancelPendingNode()
+    {
+        _model?.CancelPendingNode();
+    }
+
+    public void EndRun()
+    {
+        _model?.EndRun();
+    }
+
+    private DungeonRunModel _model;
 
     private void Awake()
     {
-        if (Instance != null &&
-            Instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
 
         Instance = this;
+        _model = new DungeonRunModel(() => new MapGenerator());
         DontDestroyOnLoad(gameObject);
-    }
-
-    /// <summary>
-    /// 新しいダンジョンランを開始する
-    /// </summary>
-    /// <param name="mapLength"></param>
-    /// <param name="minimumWidth"></param>
-    /// <param name="maximumWidth"></param>
-    public void StartNewRun(
-        int mapLength,
-        int minimumWidth,
-        int maximumWidth)
-    {
-        MapGenerator generator =
-            new MapGenerator();
-
-        MapData mapData =
-            new MapData();
-
-        _columns = generator.GenerateMap(
-            mapLength,
-            minimumWidth,
-            maximumWidth);
-
-        mapData.SetNextNode(_columns);
-
-        _currentNode = _columns[0][0];
-        _pendingNode = null;
-    }
-
-    /// <summary>
-    /// 指定されたノードを選択可能かどうかを判定する
-    /// </summary>
-    /// <param name="node"></param>
-    /// <returns></returns>
-    public bool CanSelect(
-        MapNode node)
-    {
-        return
-            node != null &&
-            _currentNode != null &&
-            _pendingNode == null &&
-            _currentNode.NextNodes.Contains(node);
-    }
-
-
-    /// <summary>
-    /// 指定されたノードを選択する
-    /// </summary>
-    /// <param name="node"></param>
-    /// <returns></returns>
-    public bool BeginNode(
-        MapNode node)
-    {
-        if (!CanSelect(node))
-            return false;
-
-        _pendingNode = node;
-        return true;
-    }
-
-
-    /// <summary>
-    /// 保留中のノードを確定する
-    /// </summary>
-    /// <param name="completedType"></param>
-    /// <returns></returns>
-    public bool CompletePendingNode(
-        out MapEventType completedType)
-    {
-        completedType = MapEventType.Start;
-
-        if (_pendingNode == null)
-            return false;
-
-        completedType =
-            _pendingNode.EventType;
-
-        _currentNode =
-            _pendingNode;
-
-        _pendingNode = null;
-
-        return true;
-    }
-
-    public void CancelPendingNode()
-    {
-        _pendingNode = null;
-    }
-
-    public void EndRun()
-    {
-        _columns = null;
-        _currentNode = null;
-        _pendingNode = null;
     }
 }

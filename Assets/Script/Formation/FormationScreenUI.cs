@@ -1,37 +1,48 @@
+using System;
 using UnityEngine;
 
-public class FormationScreenUI :
-    MonoBehaviour
+/// <summary>
+/// 編成スロットの入力と描画を担当するView兼Composition Root。
+/// </summary>
+public class FormationScreenUI : MonoBehaviour, IFormationScreenView
 {
-    [SerializeField]
-    private FormationManager
-        _formationManager;
+    public event Action<int> SlotSelected;
+
+    public void ShowCharacterSelection(int slotIndex)
+    {
+        _selectionPanel.Open(slotIndex);
+    }
+
+    public void ShowSlot(
+        int slotIndex,
+        CharacterInstance character)
+    {
+        if (slotIndex < 0 || slotIndex >= _formationSlots.Length)
+            return;
+
+        _formationSlots[slotIndex].Refresh(character);
+    }
 
     [SerializeField]
-    private FormationSlotUI[]
-        _formationSlots;
+    private FormationManager _formationManager;
 
     [SerializeField]
-    private CharacterSelectionPanel
-        _selectionPanel;
+    private FormationSlotUI[] _formationSlots;
+
+    [SerializeField]
+    private CharacterSelectionPanel _selectionPanel;
+
+    private FormationScreenPresenter _presenter;
 
     private void Awake()
     {
-        if (_formationManager == null)
-        {
-            _formationManager =
-                FormationManager.Instance;
-        }
-
         for (int slotIndex = 0;
-             slotIndex <
-             _formationSlots.Length;
+             slotIndex < _formationSlots.Length;
              slotIndex++)
         {
-            _formationSlots[slotIndex]
-                .Setup(
-                    slotIndex,
-                    OpenCharacterSelection);
+            _formationSlots[slotIndex].Setup(
+                slotIndex,
+                HandleSlotSelected);
         }
     }
 
@@ -39,52 +50,26 @@ public class FormationScreenUI :
     {
         if (_formationManager == null)
         {
-            _formationManager =
-                FormationManager.Instance;
+            _formationManager = FormationManager.Instance;
         }
 
-        if (_formationManager == null)
+        if (_formationManager?.Model == null)
             return;
 
-        _formationManager.FormationChanged +=
-            Refresh;
+        _presenter ??= new FormationScreenPresenter(
+            _formationManager.Model,
+            this);
 
-        _formationManager.PruneInvalidSlots();
-
-        Refresh();
+        _presenter.Activate();
     }
 
     private void OnDisable()
     {
-        if (_formationManager != null)
-        {
-            _formationManager
-                .FormationChanged -=
-                Refresh;
-        }
+        _presenter?.Deactivate();
     }
 
-    private void OpenCharacterSelection(
-        int slotIndex)
+    private void HandleSlotSelected(int slotIndex)
     {
-        _selectionPanel.Open(
-            slotIndex);
-    }
-
-    private void Refresh()
-    {
-        for (int slotIndex = 0;
-             slotIndex <
-             _formationSlots.Length;
-             slotIndex++)
-        {
-            CharacterInstance character =
-                _formationManager
-                    .GetCharacterAt(
-                        slotIndex);
-
-            _formationSlots[slotIndex]
-                .Refresh(character);
-        }
+        SlotSelected?.Invoke(slotIndex);
     }
 }

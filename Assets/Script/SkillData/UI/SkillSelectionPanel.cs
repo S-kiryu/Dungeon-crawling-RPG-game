@@ -5,42 +5,6 @@ using UnityEngine;
 /// </summary>
 public class SkillSelectionPanel : MonoBehaviour
 {
-    [SerializeField]
-    private BattleManager _battleManager;
-
-    [Header("表示先")]
-    [SerializeField]
-    private GameObject _panelRoot;
-
-    [SerializeField]
-    private Transform _contentRoot;
-
-    [Header("生成するボタン")]
-    [SerializeField]
-    private SkillButtonUI _skillButtonPrefab;
-
-    private void Awake()
-    {
-        Close();
-    }
-
-    private void OnEnable()
-    {
-        if (_battleManager == null)
-            return;
-
-        _battleManager.TurnActionsChanged +=
-            HandleTurnActionsChanged;
-    }
-
-    private void OnDisable()
-    {
-        if (_battleManager == null)
-            return;
-
-        _battleManager.TurnActionsChanged -=
-            HandleTurnActionsChanged;
-    }
 
     /// <summary>
     /// スキルボタンから呼ぶ。
@@ -81,6 +45,42 @@ public class SkillSelectionPanel : MonoBehaviour
         {
             _panelRoot.SetActive(false);
         }
+    }
+    [SerializeField]
+    private BattleManager _battleManager;
+
+    [Header("表示先")]
+    [SerializeField]
+    private GameObject _panelRoot;
+
+    [SerializeField]
+    private Transform _contentRoot;
+
+    [Header("生成するボタン")]
+    [SerializeField]
+    private SkillButtonUI _skillButtonPrefab;
+
+    private void Awake()
+    {
+        Close();
+    }
+
+    private void OnEnable()
+    {
+        if (_battleManager == null)
+            return;
+
+        _battleManager.TurnActionsChanged +=
+            HandleTurnActionsChanged;
+    }
+
+    private void OnDisable()
+    {
+        if (_battleManager == null)
+            return;
+
+        _battleManager.TurnActionsChanged -=
+            HandleTurnActionsChanged;
     }
 
     private void Rebuild(

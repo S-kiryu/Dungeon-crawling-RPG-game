@@ -77,6 +77,11 @@ mono_crash.*
 *.unitypackage.meta
 *.app
 
+# Local .NET tooling output
+**/bin/
+**/obj/
+!Tools/MemberOrder/MemberOrder.csproj
+
 # Crashlytics generated file
 crashlytics-build.properties
 
@@ -131,3 +136,5 @@ Assets/Noto_Sans_JP/static/NotoSansJP-SemiBold.ttf
 Assets/Noto_Sans_JP/static/NotoSansJP-SemiBold.ttf.meta
 Assets/Noto_Sans_JP/static/NotoSansJP-Thin.ttf
 Assets/Noto_Sans_JP/static/NotoSansJP-Thin.ttf.meta
+Assets/Ignor.meta
+Assets/Ignor/

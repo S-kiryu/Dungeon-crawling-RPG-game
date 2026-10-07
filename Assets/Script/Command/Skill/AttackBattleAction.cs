@@ -53,19 +53,30 @@ public sealed class AttackBattleAction :
 
         if (target == null ||
             target.Team != TeamType.Enemy ||
-            !context.Grid.IsInActionRange(
+            !context.Grid.TryGetActionFacing(
                 context.Actor,
-                targetCell))
+                targetCell,
+                out UnityEngine.Vector2Int facingDirection))
         {
             return BattleActionExecution.Rejected;
         }
+
+        context.Actor.SetFacing(facingDirection);
 
         context.Slots.TryConsume(ActionSlot.Main);
 
         // 現在の仕様では主行動後の移動を許可しない。
         context.Slots.Clear(ActionSlot.Movement);
 
-        target.TakeDamage(context.Actor.Status.Attack);
+        context.Actor.PlayAttackAnimation();
+
+        foreach (Unit hitTarget in
+                 context.Grid.GetHostileUnitsInActionRange(
+                     context.Actor))
+        {
+            hitTarget.TakeDamage(
+                context.Actor.Status.Attack);
+        }
 
         return BattleActionExecution.Completed;
     }
@@ -91,9 +102,10 @@ public sealed class AttackBattleAction :
         if (target == null ||
             target.IsDead ||
             target.Team != TeamType.Enemy ||
-            !context.Grid.IsInActionRange(
+            !context.Grid.TryGetActionFacing(
                 context.Actor,
-                targetCell))
+                targetCell,
+                out _))
         {
             return false;
         }

@@ -7,17 +7,6 @@ using UnityEngine;
 /// </summary>
 public class DamagePopupUI : MonoBehaviour
 {
-    [SerializeField]
-    private TMP_Text _damageText;
-
-    [SerializeField]
-    [Min(0.01f)]
-    private float _duration = 0.8f;
-
-    [SerializeField]
-    private float _moveDistance = 60f;
-
-    private RectTransform _rectTransform;
 
     public void Show(int damage)
     {
@@ -37,6 +26,17 @@ public class DamagePopupUI : MonoBehaviour
         StartCoroutine(
             PlayAnimation());
     }
+    [SerializeField]
+    private TMP_Text _damageText;
+
+    [SerializeField]
+    [Min(0.01f)]
+    private float _duration = 0.8f;
+
+    [SerializeField]
+    private float _moveDistance = 60f;
+
+    private RectTransform _rectTransform;
 
     private IEnumerator PlayAnimation()
     {
