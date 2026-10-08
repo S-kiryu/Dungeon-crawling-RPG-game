@@ -41,6 +41,8 @@ public class MapGenerator
                 else
                     node.EventType = GetRandomEvent();
 
+                SetupNodeInfo(node, i, mapLength);
+
                 column.Add(node);
             }
 
@@ -48,12 +50,75 @@ public class MapGenerator
         }
         return columns;
     }
-    public MapGenerator(IRandomSource randomSource = null)
+    public MapGenerator(
+        DungeonStageData stageData,
+        IRandomSource randomSource = null)
     {
+        _stageData = stageData;
         _randomSource = randomSource ?? new UnityRandomSource();
     }
 
+    private readonly DungeonStageData _stageData;
+
     private readonly IRandomSource _randomSource;
+
+    private void SetupNodeInfo(
+        MapNode node,
+        int columnIndex,
+        int mapLength)
+    {
+        switch (node.EventType)
+        {
+            case MapEventType.Start:
+                return;
+
+            case MapEventType.Shop:
+                return;
+
+            case MapEventType.Break:
+                return;
+
+            case MapEventType.Boss:
+                node.EnemyCount = 1;
+                node.Difficulty = MapNodeDifficulty.Boss;
+                node.RewardGold = 300;
+                return;
+
+            case MapEventType.Battle:
+                node.BattleScenario = GetRandomMobScenario();
+
+                node.EnemyCount =
+                    node.BattleScenario?.EnemyUnits?.Length ?? 0;
+
+                node.Difficulty =
+                    node.BattleScenario?.Difficulty ??
+                    MapNodeDifficulty.None;
+
+                node.RewardGold =
+                    node.BattleScenario?.RewardGold ?? 0;
+
+                return;
+        }
+    }
+
+    /// <summary>
+    /// ランダムにモブのシナリオを渡す
+    /// </summary>
+    /// <returns></returns>
+    private BattleScenarioData GetRandomMobScenario()
+    {
+        BattleScenarioData[] scenarios =
+            _stageData?.MobScenarios;
+
+        if (scenarios == null || scenarios.Length == 0)
+            return null;
+
+        int index = _randomSource.Range(
+            0,
+            scenarios.Length);
+
+        return scenarios[index];
+    }
 
     /// <summary>
     /// ランダムにマップのタイプを渡す

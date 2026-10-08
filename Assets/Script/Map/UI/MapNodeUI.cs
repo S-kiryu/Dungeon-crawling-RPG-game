@@ -2,12 +2,17 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
 /// 一つのマップノードを描画するView。
 /// </summary>
-public class MapNodeUI : MonoBehaviour
+public class MapNodeUI : MonoBehaviour,
+    IPointerEnterHandler,
+    IPointerExitHandler,
+    ISelectHandler,
+    IDeselectHandler
 {
     [Serializable]
     private sealed class EventVisual
@@ -19,18 +24,26 @@ public class MapNodeUI : MonoBehaviour
 
         [Tooltip("ノード中央に表示するイベントアイコン。")]
         public Sprite EventIcon = null;
+
+        [Tooltip("ホバー情報に表示するイメージ。未設定ならイベントアイコンを使います。")]
+        public Sprite PreviewImage = null;
     }
 
     public void Setup(
         MapNode node,
         bool isCurrentNode,
         bool isSelectable,
-        Action<MapNode> onSelected)
+        Action<MapNode> onSelected,
+        Action<MapNode, Sprite> onHovered,
+        Action<MapNode> onHoverEnded)
     {
         if (node == null)
             throw new ArgumentNullException(nameof(node));
 
         ApplyVisual(node);
+        _node = node;
+        _onHovered = onHovered;
+        _onHoverEnded = onHoverEnded;
         _eventText.text = node.EventType.ToString();
         _button.image.color = isCurrentNode ? Color.black : Color.white;
         _eventText.color = isCurrentNode ? Color.white : Color.black;
@@ -39,6 +52,31 @@ public class MapNodeUI : MonoBehaviour
         _button.onClick.AddListener(() => onSelected?.Invoke(node));
 
         SetSelectable(isSelectable);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        ShowInfo();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        HideInfo();
+    }
+
+    public void OnSelect(BaseEventData eventData)
+    {
+        ShowInfo();
+    }
+
+    public void OnDeselect(BaseEventData eventData)
+    {
+        HideInfo();
+    }
+
+    private void OnDisable()
+    {
+        HideInfo();
     }
 
     private void Awake()
@@ -67,6 +105,12 @@ public class MapNodeUI : MonoBehaviour
             ? node.EventIcon
             : visual?.EventIcon;
 
+        _previewImage = node.PreviewImage != null
+            ? node.PreviewImage
+            : visual?.PreviewImage != null
+                ? visual.PreviewImage
+                : eventIcon;
+
         if (_eventIconImage != null)
         {
             _eventIconImage.sprite = eventIcon;
@@ -88,6 +132,18 @@ public class MapNodeUI : MonoBehaviour
         }
 
         return null;
+    }
+
+    private void ShowInfo()
+    {
+        if (_node != null)
+            _onHovered?.Invoke(_node, _previewImage);
+    }
+
+    private void HideInfo()
+    {
+        if (_node != null)
+            _onHoverEnded?.Invoke(_node);
     }
 
     public void SetSelectable(bool canSelect)
@@ -156,4 +212,8 @@ public class MapNodeUI : MonoBehaviour
     private Color _unselectableTextColor = Color.white;
 
     private Sprite _prefabNodeSprite;
+    private Sprite _previewImage;
+    private MapNode _node;
+    private Action<MapNode, Sprite> _onHovered;
+    private Action<MapNode> _onHoverEnded;
 }

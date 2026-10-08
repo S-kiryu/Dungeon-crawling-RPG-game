@@ -14,6 +14,7 @@ public class MapUI : MonoBehaviour, IMapView
         Action<MapNode> selectNode)
     {
         ClearMap();
+        EnsureInfoPanel();
 
         for (int columnIndex = 0;
              columnIndex < columns.Count;
@@ -40,7 +41,9 @@ public class MapUI : MonoBehaviour, IMapView
                     node,
                     node == currentNode,
                     canSelect(node),
-                    selectNode);
+                    selectNode,
+                    ShowNodeInfo,
+                    HideNodeInfo);
 
                 _nodeRects.Add(node, nodeRect);
                 _spawnedNodes.Add(nodeUI);
@@ -65,9 +68,20 @@ public class MapUI : MonoBehaviour, IMapView
     [SerializeField]
     private MapLineUI _linePrefab;
 
+    [Header("ノード情報")]
+    [Tooltip("ホバー時に表示する情報パネルのPrefab。")]
+    [SerializeField]
+    private MapNodeInfoPanel _infoPanelPrefab;
+
+    [Tooltip("情報パネルの生成先。未設定ならノードと同じCanvas直下に生成します。")]
+    [SerializeField]
+    private RectTransform _infoPanelParent;
+
     private readonly Dictionary<MapNode, RectTransform> _nodeRects = new();
     private readonly List<MapNodeUI> _spawnedNodes = new();
     private readonly List<MapLineUI> _spawnedLines = new();
+    private MapNodeInfoPanel _infoPanel;
+    private MapNode _hoveredNode;
 
     private void DrawLines(IReadOnlyList<List<MapNode>> columns)
     {
@@ -92,6 +106,9 @@ public class MapUI : MonoBehaviour, IMapView
 
     private void ClearMap()
     {
+        _hoveredNode = null;
+        _infoPanel?.Hide();
+
         foreach (MapNodeUI node in _spawnedNodes)
         {
             if (node != null)
@@ -107,5 +124,59 @@ public class MapUI : MonoBehaviour, IMapView
         _spawnedNodes.Clear();
         _spawnedLines.Clear();
         _nodeRects.Clear();
+    }
+
+    private void EnsureInfoPanel()
+    {
+        if (_infoPanel != null)
+            return;
+
+        if (_infoPanelPrefab == null)
+        {
+            Debug.LogWarning(
+                "MapUI: MapNodeInfoPanel Prefabが未設定です。");
+            return;
+        }
+
+        Transform parent = _infoPanelParent;
+
+        if (parent == null && _nodeParent != null)
+        {
+            Canvas canvas =
+                _nodeParent.GetComponentInParent<Canvas>();
+            parent = canvas != null
+                ? canvas.transform
+                : null;
+        }
+
+        if (parent == null)
+        {
+            Debug.LogWarning(
+                "MapUI: MapNodeInfoPanelの生成先が見つかりません。");
+            return;
+        }
+
+        _infoPanel = Instantiate(
+            _infoPanelPrefab,
+            parent,
+            false);
+        _infoPanel.Hide();
+    }
+
+    private void ShowNodeInfo(
+        MapNode node,
+        Sprite previewImage)
+    {
+        _hoveredNode = node;
+        _infoPanel?.Show(node, previewImage);
+    }
+
+    private void HideNodeInfo(MapNode node)
+    {
+        if (_hoveredNode != node)
+            return;
+
+        _hoveredNode = null;
+        _infoPanel?.Hide();
     }
 }
