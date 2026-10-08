@@ -35,13 +35,15 @@ public sealed class MapPresenter
         if (!_model.BeginNode(selectedNode))
             return;
 
-        bool waitsForBattleResult =
+        bool waitsForEventResult =
             selectedNode.EventType == MapEventType.Battle ||
-            selectedNode.EventType == MapEventType.Boss;
+            selectedNode.EventType == MapEventType.Boss ||
+            selectedNode.EventType == MapEventType.Shop ||
+            selectedNode.EventType == MapEventType.Break;
 
         _executeEvent(selectedNode);
 
-        if (!waitsForBattleResult)
+        if (!waitsForEventResult)
         {
             _model.CompletePendingNode(out _);
             RefreshView();
@@ -51,6 +53,19 @@ public sealed class MapPresenter
     public bool CanSelectNode(MapNode node)
     {
         return _model.CanSelect(node);
+    }
+
+    /// <summary>
+    /// シーン遷移を伴わないイベントの終了を確定し、
+    /// マップ表示を更新する。
+    /// </summary>
+    public bool CompletePendingNode()
+    {
+        if (!_model.CompletePendingNode(out _))
+            return false;
+
+        RefreshView();
+        return true;
     }
 
     public MapPresenter(

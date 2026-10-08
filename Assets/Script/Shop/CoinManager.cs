@@ -1,32 +1,63 @@
+using System;
 using UnityEngine;
 
 /// <summary>
-/// コインを管理するクラス
+/// ゲーム全体のコインを管理するクラス。
 /// </summary>
-public class CoinManager : MonoBehaviour
+[DefaultExecutionOrder(-1000)]
+public sealed class CoinManager : MonoBehaviour
 {
-    public int Coin => coin;
+    public static CoinManager Instance { get; private set; }
 
-    public void AddCoin(int num)
+    public int Coin => _coin;
+
+    public event Action<int> CoinChanged;
+
+    public void AddCoin(int amount)
     {
-        if (num < 0)
+        if (amount < 0)
         {
-            Debug.LogWarning("正の数だけを入れてね");
+            Debug.LogWarning(
+                "追加するコインは0以上にしてください。");
             return;
         }
-        coin += num;
+
+        _coin += amount;
+        CoinChanged?.Invoke(_coin);
     }
 
-    public void RemoveCoin(int num)
+    public bool TrySpendCoin(int amount)
     {
-        if (num < 0)
+        if (amount < 0 || _coin < amount)
+            return false;
+
+        _coin -= amount;
+        CoinChanged?.Invoke(_coin);
+        return true;
+    }
+
+    [SerializeField, Min(0)]
+    private int _initialCoin;
+
+    private int _coin;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
         {
-            Debug.Log("お金が足りないよ");
+            Destroy(gameObject);
             return;
         }
-        coin -= num;
+
+        Instance = this;
+        _coin = _initialCoin;
+
+        DontDestroyOnLoad(gameObject);
     }
 
-    [SerializeField]
-    private int coin = 0;
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
 }

@@ -84,7 +84,16 @@ public class BattleResultController : MonoBehaviour
 
         if (playerWon)
         {
-            session.CompletePendingNode(out _);
+            int rewardGold =
+                session.PendingNode?.RewardGold ?? 0;
+
+            bool completed =
+                session.CompletePendingNode(out _);
+
+            if (completed && CoinManager.Instance != null)
+            {
+                CoinManager.Instance.AddCoin(rewardGold);
+            }
         }
         else
         {

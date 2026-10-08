@@ -21,6 +21,15 @@ public class MapManager : MonoBehaviour
         return _presenter != null && _presenter.CanSelectNode(node);
     }
 
+    /// <summary>
+    /// ショップや休憩など、マップ内で完結するイベントの終了を確定する。
+    /// </summary>
+    public bool CompletePendingNode()
+    {
+        return _presenter != null &&
+               _presenter.CompletePendingNode();
+    }
+
     [SerializeField]
     private MapUI _mapUI;
 

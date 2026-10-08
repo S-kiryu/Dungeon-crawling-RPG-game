@@ -14,6 +14,7 @@ public sealed class DungeonRunModel
         _columns.Count > 0 &&
         _currentNode != null;
 
+
     public void StartNewRun(
         int mapLength,
         int minimumWidth,

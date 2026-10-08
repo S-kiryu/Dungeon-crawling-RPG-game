@@ -1,71 +1,184 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ShopManager : MonoBehaviour
+/// <summary>
+/// TreeMap上のショップ進行と商品在庫を管理する。
+/// UIはシーン上に事前配置されたShopPanelUIを使用する。
+/// </summary>
+public sealed class ShopManager : MonoBehaviour
 {
-    [Header("ショップアイテムの設定")]
-    [SerializeField]
-    private GearItemData[] _gearItems;
-    [SerializeField]
-    private Item _itemPrefab;
-    [SerializeField]
-    private Transform _itemParent;
+    public bool IsOpen { get; private set; }
 
-    [Header("各アイテムの表示数")]
-    [SerializeField]
-    private int _gearIndex;
+    public event Action Closed;
 
-    [SerializeField]
-    private int _potionIndex;
-
-    [Header("ショップのリロールコスト")]
-    [SerializeField]
-    private int _rerollCost;
-
-    //生成したアイテムの参照を持っておく場所
-    private readonly List<Item> _items = new();
-
-    /// <summary>
-    /// ショップアイテムを生成する
-    /// </summary>
-    private void GenerateShopItems()
+    public void OpenShop()
     {
-        for (int i = 0; i < _gearIndex; i++)
-        {
-            GenerateRandomGear();
-        }
-    }
+        if (IsOpen)
+            return;
 
-    /// <summary>
-    /// アイテムのギアだけを個数分生成する関数
-    /// </summary>
-    private void GenerateRandomGear()
-    {
-        if (_gearItems == null || _gearItems.Length == 0)
+        if (_shopPanel == null)
         {
-            Debug.LogWarning("ショップに装備品が設定されていません。", this);
+            Debug.LogError(
+                "ShopManagerにShopPanelUIが設定されていません。",
+                this);
+            Closed?.Invoke();
             return;
         }
 
-        int itemIndex = Random.Range(0, _gearItems.Length);
-        GearItemData selectedData = _gearItems[itemIndex];
-
-        Item generatedItem = Instantiate(_itemPrefab, _itemParent);
-        generatedItem.Initialize(selectedData);
-
-        _items.Add(generatedItem);
+        IsOpen = true;
+        GenerateShopItems();
+        _shopPanel.SetVisible(true);
+        RefreshView();
     }
 
-    /// <summary>
-    /// ショップを初期化する関数
-    /// </summary>
-    private void ResetShop()
+    public void CloseShop()
     {
-        foreach (Item item in _items)
+        if (!IsOpen)
+            return;
+
+        IsOpen = false;
+        _shopPanel?.SetVisible(false);
+        Closed?.Invoke();
+    }
+
+    public bool TryReroll()
+    {
+        if (!IsOpen || CoinManager.Instance == null)
+            return false;
+
+        if (!CoinManager.Instance.TrySpendCoin(_rerollCost))
+            return false;
+
+        GenerateShopItems();
+        RefreshView();
+        return true;
+    }
+
+    public bool TryPurchase(ItemData itemData)
+    {
+        if (!CanPurchase(itemData))
+            return false;
+
+        CoinManager coinManager = CoinManager.Instance;
+        InventoryManager inventory = InventoryManager.Instance;
+
+        if (!coinManager.TrySpendCoin(itemData.buyPrice))
+            return false;
+
+        if (!inventory.TryAddItem(itemData))
         {
-            Destroy(item);
+            coinManager.AddCoin(itemData.buyPrice);
+            return false;
         }
 
-        _items.Clear();
+        _stock.Remove(itemData);
+        RefreshView();
+        return true;
+    }
+
+    [Header("ショップアイテムの設定")]
+    [SerializeField]
+    private GearItemData[] _gearItems;
+
+    [SerializeField, Min(1)]
+    private int _gearCount = 3;
+
+    [SerializeField, Min(0)]
+    private int _rerollCost = 10;
+
+    [Header("シーン上に配置したUI")]
+    [SerializeField]
+    private ShopPanelUI _shopPanel;
+
+    private readonly List<ItemData> _stock = new();
+
+    private void Awake()
+    {
+        if (_shopPanel == null)
+            return;
+
+        _shopPanel.CloseRequested += CloseShop;
+        _shopPanel.RerollRequested += HandleRerollRequested;
+        _shopPanel.PurchaseRequested += HandlePurchaseRequested;
+        _shopPanel.SetVisible(false);
+    }
+
+    private void OnDestroy()
+    {
+        if (_shopPanel == null)
+            return;
+
+        _shopPanel.CloseRequested -= CloseShop;
+        _shopPanel.RerollRequested -= HandleRerollRequested;
+        _shopPanel.PurchaseRequested -= HandlePurchaseRequested;
+    }
+
+    private void HandleRerollRequested()
+    {
+        TryReroll();
+    }
+
+    private void HandlePurchaseRequested(ItemData itemData)
+    {
+        TryPurchase(itemData);
+    }
+
+    private void GenerateShopItems()
+    {
+        _stock.Clear();
+
+        if (_gearItems == null || _gearItems.Length == 0)
+        {
+            Debug.LogWarning(
+                "ショップに装備品が設定されていません。",
+                this);
+            return;
+        }
+
+        List<GearItemData> candidates = new();
+
+        foreach (GearItemData item in _gearItems)
+        {
+            if (item != null)
+                candidates.Add(item);
+        }
+
+        int count = Mathf.Min(_gearCount, candidates.Count);
+
+        for (int i = 0; i < count; i++)
+        {
+            int index = UnityEngine.Random.Range(0, candidates.Count);
+            _stock.Add(candidates[index]);
+            candidates.RemoveAt(index);
+        }
+    }
+
+    private bool CanPurchase(ItemData itemData)
+    {
+        return IsOpen &&
+               itemData != null &&
+               itemData.canBuy &&
+               _stock.Contains(itemData) &&
+               CoinManager.Instance != null &&
+               CoinManager.Instance.Coin >= itemData.buyPrice &&
+               InventoryManager.Instance != null &&
+               InventoryManager.Instance.CanAddItem(itemData);
+    }
+
+    private void RefreshView()
+    {
+        if (_shopPanel == null)
+            return;
+
+        int coin = CoinManager.Instance != null
+            ? CoinManager.Instance.Coin
+            : 0;
+
+        _shopPanel.Render(
+            coin,
+            _rerollCost,
+            _stock,
+            CanPurchase);
     }
 }
