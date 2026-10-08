@@ -52,6 +52,10 @@ public class DungeonRunSession : MonoBehaviour
         _model?.EndRun();
     }
 
+    [Header("ステージ設定")]
+    [SerializeField]
+    private DungeonStageData _stageData;
+
     private DungeonRunModel _model;
 
     private void Awake()
@@ -63,7 +67,8 @@ public class DungeonRunSession : MonoBehaviour
         }
 
         Instance = this;
-        _model = new DungeonRunModel(() => new MapGenerator());
+        _model = new DungeonRunModel(
+    () => new MapGenerator(_stageData));
         DontDestroyOnLoad(gameObject);
     }
 }

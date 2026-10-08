@@ -1100,6 +1100,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 913f86df9ace2d146a7149ae5c5b8d64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRunSession
+  _stageData: {fileID: 11400000, guid: 0b3ed3fcfa93cd844a61b8f5871aa3ef, type: 2}
 --- !u!4 &1488305264
 Transform:
   m_ObjectHideFlags: 0
@@ -1250,6 +1251,8 @@ MonoBehaviour:
   _columnSpacing: 200
   _nodeSpacing: 200
   _linePrefab: {fileID: 6587193358080720971, guid: 8c0dd5b103e1a0748b88d183f836d006, type: 3}
+  _infoPanelPrefab: {fileID: 4298318489361273615, guid: 8a1494386725c214183d0223518afcf4, type: 3}
+  _infoPanelParent: {fileID: 285779766}
 --- !u!4 &1949349289
 Transform:
   m_ObjectHideFlags: 0

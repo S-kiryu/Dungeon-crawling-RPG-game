@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: TestBattle Scenario Data
   m_EditorClassIdentifier: Assembly-CSharp::BattleScenarioData
   ScenarioName: test
+  Difficulty: 2
+  RewardGold: 50
   PlayerUnits:
   - CharacterData: {fileID: 11400000, guid: a84c3c96b2db4fd7b6c9e42d36ac7e11, type: 2}
     GridPosition: {x: 0, y: 1}
