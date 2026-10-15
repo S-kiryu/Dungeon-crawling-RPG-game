@@ -5,14 +5,6 @@ using UnityEngine;
 /// </summary>
 public class MapLineUI : MonoBehaviour
 {
-    [SerializeField] private float _thickness = 5f;
-
-    private RectTransform _rectTransform;
-
-    private void Awake()
-    {
-        _rectTransform = GetComponent<RectTransform>();
-    }
 
     public void Draw(Vector2 from, Vector2 to)
     {
@@ -27,5 +19,13 @@ public class MapLineUI : MonoBehaviour
 
         _rectTransform.localRotation =
             Quaternion.Euler(0f, 0f, angle);
+    }
+    [SerializeField] private float _thickness = 5f;
+
+    private RectTransform _rectTransform;
+
+    private void Awake()
+    {
+        _rectTransform = GetComponent<RectTransform>();
     }
 }

@@ -6,14 +6,6 @@ public readonly struct ActionAvailability
     public bool CanExecute { get; }
     public string Reason { get; }
 
-    private ActionAvailability(
-        bool canExecute,
-        string reason)
-    {
-        CanExecute = canExecute;
-        Reason = reason;
-    }
-
     /// <summary>
     /// アクションが実行可能であることを示す
     /// </summary>
@@ -32,5 +24,13 @@ public readonly struct ActionAvailability
         string reason)
     {
         return new ActionAvailability(false, reason);
+    }
+
+    private ActionAvailability(
+        bool canExecute,
+        string reason)
+    {
+        CanExecute = canExecute;
+        Reason = reason;
     }
 }

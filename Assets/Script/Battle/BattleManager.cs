@@ -6,33 +6,16 @@ using UnityEngine;
 /// <summary>
 /// バトルのターン進行と、現在選択中のアクションを管理する。
 /// </summary>
-public class BattleManager : MonoBehaviour
+public class BattleManager : MonoBehaviour, IBattleHudSource
 {
-    [SerializeField]
-    private EnemyTurnController _enemyTurnController;
-
-    [SerializeField]
-    private GridManager _gridManager;
-
-    [SerializeField]
-    private UnitManager _unitManager;
-
-    private readonly List<Unit> _turnOrder = new();
-
-    private int _turnIndex = -1;
-    private bool _battleEnded;
-
-    private BattleTurnContext _turnContext;
-    private IBattleAction _selectedAction;
-    private ActiveUnitMarker _activeUnitMarker;
 
     public Unit CurrentTurnUnit { get; private set; }
-    public int RoundCount { get; private set; }
+    public int RoundCount => _turnOrder.RoundCount;
 
     /// <summary>
     /// 現在、情報表示対象として選択されているユニット。
     /// </summary>
-    public Unit InspectedUnit{get;private set;}
+    public Unit InspectedUnit { get; private set; }
 
     public BattleState CurrentState { get; private set; }
         = BattleState.PreparingTurn;
@@ -63,10 +46,6 @@ public class BattleManager : MonoBehaviour
         GetActionAvailability(
             BattleActionIds.Wait).CanExecute;
 
-    private bool IsPlayerTurn =>
-        CurrentTurnUnit != null &&
-        CurrentTurnUnit.Team == TeamType.Player;
-
     public event Action<bool> BattleEnded;
 
     /// <summary>
@@ -85,249 +64,6 @@ public class BattleManager : MonoBehaviour
     /// </summary>
     public event Action<Unit> InspectedUnitChanged;
 
-    private void Awake()
-    {
-        _activeUnitMarker =
-            GetComponent<ActiveUnitMarker>();
-
-        if (_activeUnitMarker == null)
-        {
-            _activeUnitMarker =
-                gameObject.AddComponent<
-                    ActiveUnitMarker>();
-        }
-
-        _activeUnitMarker.Initialize(this);
-
-        _unitManager.UnitsReady +=
-            BeginBattle;
-
-        if (_gridManager != null)
-        {
-            _gridManager.HoveredCellChanged +=
-                HandleHoveredCellChanged;
-        }
-    }
-
-    private void OnDestroy()
-    {
-        if (_unitManager != null)
-        {
-            _unitManager.UnitsReady -=
-                BeginBattle;
-        }
-
-        if (_gridManager != null)
-        {
-            _gridManager.HoveredCellChanged -=
-                HandleHoveredCellChanged;
-        }
-
-        ReleaseTurnContext();
-    }
-
-    /// <summary>
-    /// バトル開始
-    /// </summary>
-    private void BeginBattle()
-    {
-        BuildTurnOrder();
-        AdvanceTurn();
-    }
-
-    /// <summary>
-    /// バトルの状態を変更する。状態が変化した場合
-    /// </summary>
-    /// <param name="nextState"></param>
-    private void ChangeState(BattleState nextState)
-    {
-        CurrentState = nextState;
-
-        Debug.Log(
-            $"BattleState changed: {CurrentState}");
-
-        TurnActionsChanged?.Invoke();
-    }
-
-    /// <summary>
-    /// クリックして表示したユニットのマスから
-    /// カーソルが外れたら情報表示を解除する。
-    /// </summary>
-    private void HandleHoveredCellChanged(
-        GridCell hoveredCell)
-    {
-        if (InspectedUnit == null)
-            return;
-
-        // まだ表示中ユニットのマスにいる
-        if (hoveredCell != null &&
-            hoveredCell.CurrentUnit ==
-                InspectedUnit)
-        {
-            return;
-        }
-
-        SetInspectedUnit(null);
-    }
-
-    /// <summary>
-    /// ターンを進める。現在のターンが終了した場合、次のユニットのターンへ移行する。
-    /// </summary>
-    private void AdvanceTurn()
-    {
-        if (IsBattleFinished())
-            return;
-
-        do
-        {
-            _turnIndex++;
-
-            if (_turnIndex >= _turnOrder.Count)
-            {
-                BuildTurnOrder();
-                _turnIndex++;
-            }
-
-            CurrentTurnUnit = _turnOrder[_turnIndex];
-        }
-        while (CurrentTurnUnit == null ||
-               CurrentTurnUnit.IsDead);
-
-        TurnOrderChanged?.Invoke();
-
-        if (CurrentTurnUnit.Team == TeamType.Player)
-        {
-            StartPlayerAction(CurrentTurnUnit);
-        }
-        else
-        {
-            StartCoroutine(
-                EnemyActionRoutine(CurrentTurnUnit));
-        }
-    }
-
-    /// <summary>
-    /// プレイヤーターン用の行動枠とアクション一覧を構築する。
-    /// </summary>
-    private void StartPlayerAction(Unit unit)
-    {
-        ReleaseTurnContext();
-
-        TurnActionSlots slots = new();
-        slots.Set(ActionSlot.Movement, 1);
-        slots.Set(ActionSlot.Main, 1);
-
-        TurnActionSet actions = new();
-        actions.Add(new MoveBattleAction());
-        actions.Add(new AttackBattleAction());
-        actions.Add(new WaitBattleAction());
-
-
-        if (unit.Skills.Count > 0)
-        {
-            actions.Add(
-                new SkillBattleAction(
-                    unit.Skills[0]));
-        }
-
-        _turnContext = new BattleTurnContext(
-            unit,
-            _gridManager,
-            slots,
-            actions);
-
-        actions.Changed += HandleTurnConfigurationChanged;
-        slots.Changed += HandleTurnConfigurationChanged;
-
-        ApplyTurnContributors(unit);
-
-        _gridManager.PreparePlayerAction(unit);
-        ChangeState(BattleState.SelectCommand);
-    }
-
-    /// <summary>
-    /// Unitへ追加された装備・バフ等から、そのターンの構成を変更する。
-    /// </summary>
-    private void ApplyTurnContributors(Unit unit)
-    {
-        MonoBehaviour[] components =
-            unit.GetComponents<MonoBehaviour>();
-
-        foreach (MonoBehaviour component in components)
-        {
-            if (component is ITurnActionContributor contributor)
-            {
-                contributor.ConfigureTurn(_turnContext);
-            }
-        }
-    }
-
-    /// <summary>
-    /// 敵ターンの行動を実行する。
-    /// </summary>
-    /// <param name="enemy">行動を実行する敵ユニット</param>
-    /// <returns>コルーチン</returns>
-    private IEnumerator EnemyActionRoutine(Unit enemy)
-    {
-        ChangeState(BattleState.EnemyTurn);
-
-        yield return _enemyTurnController.ExecuteAction(enemy);
-
-        CompleteCurrentAction();
-    }
-
-    private bool IsBattleFinished()
-    {
-        bool hasPlayer =
-            _unitManager
-                .GetLivingUnits(TeamType.Player)
-                .Count > 0;
-
-        bool hasEnemy =
-            _unitManager
-                .GetLivingUnits(TeamType.Enemy)
-                .Count > 0;
-
-        if (hasPlayer && hasEnemy)
-            return false;
-
-        if (_battleEnded)
-            return true;
-
-        _battleEnded = true;
-
-        ReleaseTurnContext();
-        CurrentTurnUnit = null;
-
-        TurnOrderChanged?.Invoke();
-
-        _gridManager.ClearBattleSelection();
-        ChangeState(BattleState.BattleFinished);
-
-        if (hasPlayer)
-            Debug.Log("プレイヤーの勝利");
-        else
-            Debug.Log("プレイヤーの敗北");
-
-        BattleEnded?.Invoke(hasPlayer);
-
-        return true;
-    }
-
-    /// <summary>
-    /// 情報表示対象のユニットを変更する。
-    /// </summary>
-    private void SetInspectedUnit(Unit unit)
-    {
-        if (InspectedUnit == unit)
-            return;
-
-        InspectedUnit = unit;
-
-        InspectedUnitChanged?.Invoke(
-            InspectedUnit);
-    }
-
     /// <summary>
     /// 現在のユニットのターンを終了する。
     /// </summary>
@@ -337,6 +73,7 @@ public class BattleManager : MonoBehaviour
 
         ReleaseTurnContext();
         CurrentTurnUnit = null;
+        _turnOrder.ClearCurrent();
 
         AdvanceTurn();
     }
@@ -447,14 +184,6 @@ public class BattleManager : MonoBehaviour
             _turnContext);
     }
 
-    private bool CanSelectAction(string actionId)
-    {
-        return IsPlayerTurn &&
-               _turnContext != null &&
-               CurrentState == BattleState.SelectCommand &&
-               GetActionAvailability(actionId).CanExecute;
-    }
-
     /// <summary>
     /// Idで任意のアクションを選択する。
     /// 動的に生成したコマンドUIからも利用できる。
@@ -481,93 +210,6 @@ public class BattleManager : MonoBehaviour
         action.BeginTargetSelection(_turnContext);
 
         return true;
-    }
-
-    private void ExecuteSelectedAction(GridCell target)
-    {
-        if (_selectedAction == null || _turnContext == null)
-            return;
-
-        if (!GetActionAvailability(
-                _selectedAction.Id).CanExecute)
-        {
-            OnCancelSelectedAction();
-            return;
-        }
-
-        ChangeState(BattleState.ExecutingAction);
-
-        BattleActionExecution result =
-            _selectedAction.TryExecute(
-                _turnContext,
-                target,
-                HandleAsyncActionCompleted);
-
-        switch (result)
-        {
-            case BattleActionExecution.Rejected:
-                if (_selectedAction.RequiresTarget)
-                {
-                    ChangeState(BattleState.SelectTarget);
-                }
-                else
-                {
-                    _selectedAction = null;
-                    ChangeState(BattleState.SelectCommand);
-                }
-                break;
-
-            case BattleActionExecution.Started:
-                break;
-
-            case BattleActionExecution.Completed:
-                CompleteSelectedAction();
-                break;
-
-            case BattleActionExecution.EndTurn:
-                _selectedAction = null;
-                CompleteCurrentAction();
-                break;
-        }
-    }
-
-    private void HandleAsyncActionCompleted()
-    {
-        if (_turnContext == null ||
-            CurrentState != BattleState.ExecutingAction)
-        {
-            return;
-        }
-
-        CompleteSelectedAction();
-    }
-
-    private void CompleteSelectedAction()
-    {
-        Unit actingUnit = _turnContext?.Actor;
-        _selectedAction = null;
-
-        if (IsBattleFinished())
-            return;
-
-        TurnOrderChanged?.Invoke();
-
-        _gridManager.PreparePlayerAction(actingUnit);
-        ChangeState(BattleState.SelectCommand);
-    }
-
-    private void HandleTurnConfigurationChanged()
-    {
-        if (_selectedAction != null &&
-            CurrentState == BattleState.SelectTarget &&
-            !GetActionAvailability(
-                _selectedAction.Id).CanExecute)
-        {
-            OnCancelSelectedAction();
-            return;
-        }
-
-        TurnActionsChanged?.Invoke();
     }
 
     /// <summary>
@@ -670,6 +312,385 @@ public class BattleManager : MonoBehaviour
     }
 
     /// <summary>
+    /// 現在の行動者を先頭として、今後行動するユニットを取得する。
+    /// 現在ラウンドの末尾へ到達した場合は次ラウンドの先頭から補充する。
+    /// </summary>
+    public List<Unit> GetUpcomingTurnUnits(
+        int maximumCount)
+    {
+        List<Unit> result = new();
+
+        foreach (UnitModel model in
+                 _turnOrder.GetUpcoming(maximumCount))
+        {
+            Unit unit = FindUnit(model);
+
+            if (unit != null)
+            {
+                result.Add(unit);
+            }
+        }
+
+        return result;
+    }
+    [SerializeField]
+    private EnemyTurnController _enemyTurnController;
+
+    [SerializeField]
+    private GridManager _gridManager;
+
+    [SerializeField]
+    private UnitManager _unitManager;
+
+    private readonly BattleTurnOrderModel _turnOrder = new();
+    private bool _battleEnded;
+
+    private BattleTurnContext _turnContext;
+    private IBattleAction _selectedAction;
+    private ActiveUnitMarker _activeUnitMarker;
+
+    private bool IsPlayerTurn =>
+        CurrentTurnUnit != null &&
+        CurrentTurnUnit.Team == TeamType.Player;
+
+    private void Awake()
+    {
+        _activeUnitMarker =
+            GetComponent<ActiveUnitMarker>();
+
+        if (_activeUnitMarker == null)
+        {
+            _activeUnitMarker =
+                gameObject.AddComponent<
+                    ActiveUnitMarker>();
+        }
+
+        _activeUnitMarker.Initialize(this);
+
+        _unitManager.UnitsReady +=
+            BeginBattle;
+
+        if (_gridManager != null)
+        {
+            _gridManager.CellClicked +=
+                OnCellClicked;
+
+            _gridManager.HoveredCellChanged +=
+                HandleHoveredCellChanged;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (_unitManager != null)
+        {
+            _unitManager.UnitsReady -=
+                BeginBattle;
+        }
+
+        if (_gridManager != null)
+        {
+            _gridManager.CellClicked -=
+                OnCellClicked;
+
+            _gridManager.HoveredCellChanged -=
+                HandleHoveredCellChanged;
+        }
+
+        ReleaseTurnContext();
+    }
+
+    /// <summary>
+    /// バトル開始
+    /// </summary>
+    private void BeginBattle()
+    {
+        AdvanceTurn();
+    }
+
+    /// <summary>
+    /// バトルの状態を変更する。状態が変化した場合
+    /// </summary>
+    /// <param name="nextState"></param>
+    private void ChangeState(BattleState nextState)
+    {
+        CurrentState = nextState;
+
+        Debug.Log(
+            $"BattleState changed: {CurrentState}");
+
+        TurnActionsChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// クリックして表示したユニットのマスから
+    /// カーソルが外れたら情報表示を解除する。
+    /// </summary>
+    private void HandleHoveredCellChanged(
+        GridCell hoveredCell)
+    {
+        if (InspectedUnit == null)
+            return;
+
+        // まだ表示中ユニットのマスにいる
+        if (hoveredCell != null &&
+            hoveredCell.CurrentUnit ==
+                InspectedUnit)
+        {
+            return;
+        }
+
+        SetInspectedUnit(null);
+    }
+
+    /// <summary>
+    /// ターンを進める。現在のターンが終了した場合、次のユニットのターンへ移行する。
+    /// </summary>
+    private void AdvanceTurn()
+    {
+        if (IsBattleFinished())
+            return;
+
+        UnitModel nextModel = _turnOrder.Advance(
+            GetParticipantModels());
+
+        CurrentTurnUnit = FindUnit(nextModel);
+
+        if (CurrentTurnUnit == null)
+            return;
+
+        TurnOrderChanged?.Invoke();
+
+        if (CurrentTurnUnit.Team == TeamType.Player)
+        {
+            StartPlayerAction(CurrentTurnUnit);
+        }
+        else
+        {
+            StartCoroutine(
+                EnemyActionRoutine(CurrentTurnUnit));
+        }
+    }
+
+    /// <summary>
+    /// プレイヤーターン用の行動枠とアクション一覧を構築する。
+    /// </summary>
+    private void StartPlayerAction(Unit unit)
+    {
+        ReleaseTurnContext();
+
+        TurnActionSlots slots = new();
+        slots.Set(ActionSlot.Movement, 1);
+        slots.Set(ActionSlot.Main, 1);
+
+        TurnActionSet actions = new();
+        actions.Add(new MoveBattleAction());
+        actions.Add(new AttackBattleAction());
+        actions.Add(new WaitBattleAction());
+
+
+        if (unit.Skills.Count > 0)
+        {
+            actions.Add(
+                new SkillBattleAction(
+                    unit.Skills[0]));
+        }
+
+        _turnContext = new BattleTurnContext(
+            unit,
+            _gridManager,
+            slots,
+            actions);
+
+        actions.Changed += HandleTurnConfigurationChanged;
+        slots.Changed += HandleTurnConfigurationChanged;
+
+        ApplyTurnContributors(unit);
+
+        _gridManager.PreparePlayerAction(unit);
+        ChangeState(BattleState.SelectCommand);
+    }
+
+    /// <summary>
+    /// Unitへ追加された装備・バフ等から、そのターンの構成を変更する。
+    /// </summary>
+    private void ApplyTurnContributors(Unit unit)
+    {
+        MonoBehaviour[] components =
+            unit.GetComponents<MonoBehaviour>();
+
+        foreach (MonoBehaviour component in components)
+        {
+            if (component is ITurnActionContributor contributor)
+            {
+                contributor.ConfigureTurn(_turnContext);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 敵ターンの行動を実行する。
+    /// </summary>
+    /// <param name="enemy">行動を実行する敵ユニット</param>
+    /// <returns>コルーチン</returns>
+    private IEnumerator EnemyActionRoutine(Unit enemy)
+    {
+        ChangeState(BattleState.EnemyTurn);
+
+        yield return _enemyTurnController.ExecuteAction(enemy);
+
+        CompleteCurrentAction();
+    }
+
+    private bool IsBattleFinished()
+    {
+        bool hasPlayer =
+            _unitManager
+                .GetLivingUnits(TeamType.Player)
+                .Count > 0;
+
+        bool hasEnemy =
+            _unitManager
+                .GetLivingUnits(TeamType.Enemy)
+                .Count > 0;
+
+        if (hasPlayer && hasEnemy)
+            return false;
+
+        if (_battleEnded)
+            return true;
+
+        _battleEnded = true;
+
+        ReleaseTurnContext();
+        CurrentTurnUnit = null;
+        _turnOrder.ClearCurrent();
+
+        TurnOrderChanged?.Invoke();
+
+        _gridManager.ClearBattleSelection();
+        ChangeState(BattleState.BattleFinished);
+
+        if (hasPlayer)
+            Debug.Log("プレイヤーの勝利");
+        else
+            Debug.Log("プレイヤーの敗北");
+
+        BattleEnded?.Invoke(hasPlayer);
+
+        return true;
+    }
+
+    /// <summary>
+    /// 情報表示対象のユニットを変更する。
+    /// </summary>
+    private void SetInspectedUnit(Unit unit)
+    {
+        if (InspectedUnit == unit)
+            return;
+
+        InspectedUnit = unit;
+
+        InspectedUnitChanged?.Invoke(
+            InspectedUnit);
+    }
+
+    private bool CanSelectAction(string actionId)
+    {
+        return IsPlayerTurn &&
+               _turnContext != null &&
+               CurrentState == BattleState.SelectCommand &&
+               GetActionAvailability(actionId).CanExecute;
+    }
+
+    private void ExecuteSelectedAction(GridCell target)
+    {
+        if (_selectedAction == null || _turnContext == null)
+            return;
+
+        if (!GetActionAvailability(
+                _selectedAction.Id).CanExecute)
+        {
+            OnCancelSelectedAction();
+            return;
+        }
+
+        ChangeState(BattleState.ExecutingAction);
+
+        BattleActionExecution result =
+            _selectedAction.TryExecute(
+                _turnContext,
+                target,
+                HandleAsyncActionCompleted);
+
+        switch (result)
+        {
+            case BattleActionExecution.Rejected:
+                if (_selectedAction.RequiresTarget)
+                {
+                    ChangeState(BattleState.SelectTarget);
+                }
+                else
+                {
+                    _selectedAction = null;
+                    ChangeState(BattleState.SelectCommand);
+                }
+                break;
+
+            case BattleActionExecution.Started:
+                break;
+
+            case BattleActionExecution.Completed:
+                CompleteSelectedAction();
+                break;
+
+            case BattleActionExecution.EndTurn:
+                _selectedAction = null;
+                CompleteCurrentAction();
+                break;
+        }
+    }
+
+    private void HandleAsyncActionCompleted()
+    {
+        if (_turnContext == null ||
+            CurrentState != BattleState.ExecutingAction)
+        {
+            return;
+        }
+
+        CompleteSelectedAction();
+    }
+
+    private void CompleteSelectedAction()
+    {
+        Unit actingUnit = _turnContext?.Actor;
+        _selectedAction = null;
+
+        if (IsBattleFinished())
+            return;
+
+        TurnOrderChanged?.Invoke();
+
+        _gridManager.PreparePlayerAction(actingUnit);
+        ChangeState(BattleState.SelectCommand);
+    }
+
+    private void HandleTurnConfigurationChanged()
+    {
+        if (_selectedAction != null &&
+            CurrentState == BattleState.SelectTarget &&
+            !GetActionAvailability(
+                _selectedAction.Id).CanExecute)
+        {
+            OnCancelSelectedAction();
+            return;
+        }
+
+        TurnActionsChanged?.Invoke();
+    }
+
+    /// <summary>
     /// 現在のユニットが指定スキルを所持しているか。
     /// </summary>
     private bool HasCurrentUnitSkill(
@@ -711,83 +732,34 @@ public class BattleManager : MonoBehaviour
         _turnContext = null;
     }
 
-    private void BuildTurnOrder()
+    private List<UnitModel> GetParticipantModels()
     {
-        _turnOrder.Clear();
+        List<UnitModel> participants = new();
 
         foreach (Unit unit in _unitManager.Units)
         {
-            if (unit == null ||
-                unit.IsDead ||
-                unit.Team == TeamType.Neutral)
+            if (unit?.Model != null)
             {
-                continue;
+                participants.Add(unit.Model);
             }
-
-            _turnOrder.Add(unit);
         }
 
-        _turnOrder.Sort((left, right) =>
-        {
-            return right.Status.Speed.CompareTo(
-                left.Status.Speed);
-        });
-
-        _turnIndex = -1;
-        RoundCount++;
+        return participants;
     }
 
-    /// <summary>
-    /// 現在の行動者を先頭として、今後行動するユニットを取得する。
-    /// 現在ラウンドの末尾へ到達した場合は次ラウンドの先頭から補充する。
-    /// </summary>
-    public List<Unit> GetUpcomingTurnUnits(
-        int maximumCount)
+    private Unit FindUnit(UnitModel model)
     {
-        List<Unit> result = new();
+        if (model == null)
+            return null;
 
-        if (maximumCount <= 0 ||
-            _turnOrder.Count == 0 ||
-            _turnIndex < 0)
+        foreach (Unit unit in _unitManager.Units)
         {
-            return result;
+            if (unit != null && unit.Model == model)
+            {
+                return unit;
+            }
         }
 
-        AddUpcomingUnits(
-            result,
-            _turnIndex,
-            _turnOrder.Count,
-            maximumCount);
-
-        if (result.Count < maximumCount)
-        {
-            AddUpcomingUnits(
-                result,
-                0,
-                _turnOrder.Count,
-                maximumCount);
-        }
-
-        return result;
-    }
-
-    private void AddUpcomingUnits(
-        List<Unit> result,
-        int startIndex,
-        int endIndex,
-        int maximumCount)
-    {
-        for (int index = startIndex;
-             index < endIndex &&
-             result.Count < maximumCount;
-             index++)
-        {
-            Unit unit = _turnOrder[index];
-
-            if (unit == null || unit.IsDead)
-                continue;
-
-            result.Add(unit);
-        }
+        return null;
     }
 }

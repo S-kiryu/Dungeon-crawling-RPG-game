@@ -24,7 +24,7 @@ public class CurrentStatus
         CurrentHP = status.HP;
 
         Attack = status.Attack;
-        Defense = status.Deffens;
+        Defense = status.Defense;
         Speed = status.Speed;
         MoveLength = status.MoveLength;
         Weight = status.Weight;

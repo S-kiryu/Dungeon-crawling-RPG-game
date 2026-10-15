@@ -11,6 +11,27 @@ public class ActiveUnitMarker : MonoBehaviour
     private const string ShaderResourcePath =
         "Shaders/ActiveUnitMagicCircle";
 
+    private static readonly int ColorId =
+        Shader.PropertyToID("_Color");
+
+    private static readonly int RotationSpeedId =
+        Shader.PropertyToID("_RotationSpeed");
+
+    private static readonly int StateIntensityId =
+        Shader.PropertyToID("_StateIntensity");
+
+    public void Initialize(
+        BattleManager battleManager)
+    {
+        Unsubscribe();
+
+        _battleManager = battleManager;
+
+        EnsureMarkerObject();
+        Subscribe();
+        Refresh();
+    }
+
     [Header("配置")]
     [SerializeField]
     private float _heightOffset = 0.53f;
@@ -30,33 +51,12 @@ public class ActiveUnitMarker : MonoBehaviour
     [SerializeField]
     private float _executingRotationSpeed = 0.28f;
 
-    private static readonly int ColorId =
-        Shader.PropertyToID("_Color");
-
-    private static readonly int RotationSpeedId =
-        Shader.PropertyToID("_RotationSpeed");
-
-    private static readonly int StateIntensityId =
-        Shader.PropertyToID("_StateIntensity");
-
     private BattleManager _battleManager;
     private Unit _trackedUnit;
     private GameObject _markerObject;
     private MeshRenderer _markerRenderer;
     private Material _runtimeMaterial;
     private bool _subscribed;
-
-    public void Initialize(
-        BattleManager battleManager)
-    {
-        Unsubscribe();
-
-        _battleManager = battleManager;
-
-        EnsureMarkerObject();
-        Subscribe();
-        Refresh();
-    }
 
     private void OnEnable()
     {

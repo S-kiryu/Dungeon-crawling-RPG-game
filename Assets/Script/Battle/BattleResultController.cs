@@ -20,6 +20,8 @@ public class BattleResultController : MonoBehaviour
     [SerializeField]
     private TMP_Text _resultText;
 
+    private bool _resultCommitted;
+
     private void Awake()
     {
         if (_resultView != null)
@@ -51,6 +53,8 @@ public class BattleResultController : MonoBehaviour
     private void HandleBattleEnded(
         bool playerWon)
     {
+        CommitDungeonResult(playerWon);
+
         if (_commandView != null)
             _commandView.SetActive(false);
 
@@ -63,6 +67,37 @@ public class BattleResultController : MonoBehaviour
                 playerWon
                     ? "勝利"
                     : "敗北";
+        }
+    }
+
+    private void CommitDungeonResult(bool playerWon)
+    {
+        if (_resultCommitted)
+            return;
+
+        _resultCommitted = true;
+
+        DungeonRunSession session = DungeonRunSession.Instance;
+
+        if (session == null)
+            return;
+
+        if (playerWon)
+        {
+            int rewardGold =
+                session.PendingNode?.RewardGold ?? 0;
+
+            bool completed =
+                session.CompletePendingNode(out _);
+
+            if (completed && CoinManager.Instance != null)
+            {
+                CoinManager.Instance.AddCoin(rewardGold);
+            }
+        }
+        else
+        {
+            session.CancelPendingNode();
         }
     }
 }

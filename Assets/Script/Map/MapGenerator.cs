@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 public class MapGenerator
 {
+
     /// <summary>
     /// マップ生成の関数
     /// </summary>
@@ -20,7 +20,9 @@ public class MapGenerator
         {
             List<MapNode> column = new();
 
-            int width = Random.Range(mapMinimumWidth, mapMaximumWidth + 1);
+            int width = _randomSource.Range(
+                mapMinimumWidth,
+                mapMaximumWidth + 1);
 
             // 最初と最後は1マス固定
             if (i == 0 || i == mapLength - 1)
@@ -39,12 +41,83 @@ public class MapGenerator
                 else
                     node.EventType = GetRandomEvent();
 
+                SetupNodeInfo(node, i, mapLength);
+
                 column.Add(node);
             }
 
             columns.Add(column);
         }
         return columns;
+    }
+    public MapGenerator(
+        DungeonStageData stageData,
+        IRandomSource randomSource = null)
+    {
+        _stageData = stageData;
+        _randomSource = randomSource ?? new UnityRandomSource();
+    }
+
+    private readonly DungeonStageData _stageData;
+
+    private readonly IRandomSource _randomSource;
+
+    private void SetupNodeInfo(
+        MapNode node,
+        int columnIndex,
+        int mapLength)
+    {
+        switch (node.EventType)
+        {
+            case MapEventType.Start:
+                return;
+
+            case MapEventType.Shop:
+                return;
+
+            case MapEventType.Break:
+                return;
+
+            case MapEventType.Boss:
+                node.EnemyCount = 1;
+                node.Difficulty = MapNodeDifficulty.Boss;
+                node.RewardGold = 300;
+                return;
+
+            case MapEventType.Battle:
+                node.BattleScenario = GetRandomMobScenario();
+
+                node.EnemyCount =
+                    node.BattleScenario?.EnemyUnits?.Length ?? 0;
+
+                node.Difficulty =
+                    node.BattleScenario?.Difficulty ??
+                    MapNodeDifficulty.None;
+
+                node.RewardGold =
+                    node.BattleScenario?.RewardGold ?? 0;
+
+                return;
+        }
+    }
+
+    /// <summary>
+    /// ランダムにモブのシナリオを渡す
+    /// </summary>
+    /// <returns></returns>
+    private BattleScenarioData GetRandomMobScenario()
+    {
+        BattleScenarioData[] scenarios =
+            _stageData?.MobScenarios;
+
+        if (scenarios == null || scenarios.Length == 0)
+            return null;
+
+        int index = _randomSource.Range(
+            0,
+            scenarios.Length);
+
+        return scenarios[index];
     }
 
     /// <summary>
@@ -53,7 +126,7 @@ public class MapGenerator
     /// <returns></returns>
     private MapEventType GetRandomEvent()
     {
-        int random = Random.Range(0, 100);
+        int random = _randomSource.Range(0, 100);
 
         if (random < 50)
             return MapEventType.Battle;

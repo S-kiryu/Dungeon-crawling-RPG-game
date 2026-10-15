@@ -2,93 +2,100 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// ガチャを実行し、生成されたキャラクターを所持一覧へ追加する。
+/// 雇用画面のView兼Composition Root。
+/// クラス名は既存シーンとの互換性のため維持している。
 /// </summary>
-public class GachaManager : MonoBehaviour
+public class GachaManager : MonoBehaviour, IRecruitmentView
 {
-    [SerializeField]
-    private GachaSettings _settings;
-
-    [SerializeField]
-    private CharacterRoster _roster;
-
-    private CharacterGenerator _generator;
-
     public event Action<CharacterInstance> CharacterGenerated;
 
-    private void Awake()
-    {
-        _generator = new CharacterGenerator(_settings);
-
-        if (_roster == null)
-            _roster = CharacterRoster.Instance;
-    }
-
     /// <summary>
-    /// Unity UI Buttonから呼び出す単発ガチャ。
+    /// Unity UI Buttonから呼び出す単発雇用。
     /// </summary>
     public void DrawOneFromButton()
     {
         DrawOne();
     }
 
-    /// <summary>
-    /// 一回のガチャ処理
-    /// </summary>
-    /// <returns></returns>
     public CharacterInstance DrawOne()
     {
-        if (_generator == null)
-        {
-            Debug.LogError(
-                "CharacterGeneratorがありません。",
-                this);
-            return null;
-        }
-
-        if (_roster == null)
-            _roster = CharacterRoster.Instance;
-
-        if (_roster == null)
-        {
-            Debug.LogError(
-                "CharacterRosterがシーンにありません。",
-                this);
-            return null;
-        }
-
-        CharacterInstance character =
-            _generator.Generate();
-
-        if (character == null)
+        if (!TryCreatePresenter())
             return null;
 
-        if (!_roster.Add(character))
-            return null;
-
-        CharacterGenerated?.Invoke(character);
-
-        Debug.Log(
-            CreateResultMessage(character),
-            this);
-
-        return character;
+        return _presenter.RecruitOne();
     }
 
-    /// <summary>
-    /// ガチャ結果を表示する物
-    /// </summary>
-    /// <param name="character"></param>
-    /// <returns></returns>
-    private string CreateResultMessage(
-        CharacterInstance character)
+    public void ShowGeneratedCharacter(CharacterInstance character)
+    {
+        Debug.Log(CreateResultMessage(character), this);
+    }
+
+    public void ShowRecruitmentError(string message)
+    {
+        Debug.LogError(message, this);
+    }
+
+    [SerializeField]
+    private GachaSettings _settings;
+
+    [SerializeField]
+    private CharacterRoster _roster;
+
+    private RecruitmentPresenter _presenter;
+
+    private void Awake()
+    {
+        TryCreatePresenter();
+    }
+
+    private bool TryCreatePresenter()
+    {
+        if (_presenter != null)
+            return true;
+
+        if (_roster == null)
+        {
+            _roster = CharacterRoster.Instance;
+        }
+
+        if (_settings == null)
+        {
+            ShowRecruitmentError("GachaSettingsが設定されていません。");
+            return false;
+        }
+
+        if (_roster?.Model == null)
+        {
+            ShowRecruitmentError("CharacterRosterがシーンにありません。");
+            return false;
+        }
+
+        _presenter = new RecruitmentPresenter(
+            new CharacterGenerator(_settings),
+            _roster.Model,
+            this);
+
+        _presenter.CharacterGenerated +=
+            HandleCharacterGenerated;
+
+        return true;
+    }
+
+    private void HandleCharacterGenerated(CharacterInstance character)
+    {
+        CharacterGenerated?.Invoke(character);
+    }
+
+    private static string CreateResultMessage(CharacterInstance character)
     {
         string skillNames = string.Empty;
 
         foreach (SkillData skill in character.Skills)
         {
             if (!string.IsNullOrEmpty(skillNames))
+            {
                 skillNames += ", ";
+            }
 
             skillNames += skill.SkillName;
         }
@@ -96,8 +103,7 @@ public class GachaManager : MonoBehaviour
         CurrentStatus status = character.Status;
 
         return
-            $"獲得: " +
-            $"{character.CharacterData.CharacterName} " +
+            $"雇用: {character.CharacterData.CharacterName} " +
             $"{character.Rarity}\n" +
             $"ID: {character.InstanceId}\n" +
             $"HP: {status.MaxHP} " +

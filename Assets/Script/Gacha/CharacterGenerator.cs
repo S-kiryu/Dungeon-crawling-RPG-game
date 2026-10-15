@@ -8,12 +8,6 @@ using UnityEngine;
 /// </summary>
 public class CharacterGenerator
 {
-    private readonly GachaSettings _settings;
-
-    public CharacterGenerator(GachaSettings settings)
-    {
-        _settings = settings;
-    }
 
     /// <summary>
     /// ユニットを渡す関数
@@ -72,6 +66,16 @@ public class CharacterGenerator
 
         return character != null;
     }
+
+    public CharacterGenerator(
+        GachaSettings settings,
+        IRandomSource randomSource = null)
+    {
+        _settings = settings;
+        _randomSource = randomSource ?? new UnityRandomSource();
+    }
+    private readonly GachaSettings _settings;
+    private readonly IRandomSource _randomSource;
 
     private bool ValidateSettings()
     {
@@ -236,7 +240,7 @@ public class CharacterGenerator
             0);
 
         targetStatus.Defense = GenerateStat(
-            baseStatus.Deffens,
+            baseStatus.Defense,
             minimumMultiplier,
             maximumMultiplier,
             0);
@@ -272,7 +276,7 @@ public class CharacterGenerator
         float maximumMultiplier,
         int minimumValue)
     {
-        float multiplier = UnityEngine.Random.Range(
+        float multiplier = _randomSource.Range(
             minimumMultiplier,
             maximumMultiplier);
 
@@ -407,7 +411,7 @@ public class CharacterGenerator
         if (totalWeight <= 0)
             return false;
 
-        int randomValue = UnityEngine.Random.Range(
+        int randomValue = _randomSource.Range(
             0,
             totalWeight);
 

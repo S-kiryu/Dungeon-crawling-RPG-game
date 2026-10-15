@@ -16,6 +16,10 @@ public class BattleEvent : EventBase
         {
             Debug.LogWarning(
                 "出撃可能な編成がありません。");
+
+            DungeonRunSession.Instance
+                ?.CancelPendingNode();
+
             return;
         }
 

@@ -6,8 +6,6 @@ using System.Collections.Generic;
 /// </summary>
 public sealed class TurnActionSet
 {
-    private readonly List<IBattleAction> _actions = new();
-    private readonly List<IActionRule> _rules = new();
 
     public IReadOnlyList<IBattleAction> Actions => _actions;
 
@@ -110,4 +108,6 @@ public sealed class TurnActionSet
         Changed?.Invoke();
         return true;
     }
+    private readonly List<IBattleAction> _actions = new();
+    private readonly List<IActionRule> _rules = new();
 }

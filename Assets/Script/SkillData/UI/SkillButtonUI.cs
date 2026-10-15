@@ -12,20 +12,6 @@ public class SkillButtonUI :
     IPointerEnterHandler,
     IPointerExitHandler
 {
-    [SerializeField]
-    private Button _button;
-
-    [SerializeField]
-    private Image _iconImage;
-
-    [SerializeField]
-    private TMP_Text _nameText;
-
-    [SerializeField]
-    private TMP_Text _descriptionText;
-
-    private Action _onPointerEnter;
-    private Action _onPointerExit;
 
     public void Setup(
         SkillData skill,
@@ -83,4 +69,18 @@ public class SkillButtonUI :
     {
         _onPointerExit?.Invoke();
     }
+    [SerializeField]
+    private Button _button;
+
+    [SerializeField]
+    private Image _iconImage;
+
+    [SerializeField]
+    private TMP_Text _nameText;
+
+    [SerializeField]
+    private TMP_Text _descriptionText;
+
+    private Action _onPointerEnter;
+    private Action _onPointerExit;
 }

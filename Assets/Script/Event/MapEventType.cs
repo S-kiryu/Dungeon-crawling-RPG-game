@@ -1,7 +1,7 @@
 /// <summary>
 ///イベントの種類
 /// </summary>
-public enum MapEventType 
+public enum MapEventType
 {
     Start,//スタート
     Battle,//戦闘
